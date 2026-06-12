@@ -7,13 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-const TG_TOKEN   = '8817936267:AAHD6L3qpsgz2bN76mWADWJy-G6gUJfNyD8';
-const TG_CHAT_ID = '213542465';
 <style>
   /* === Reset & base === */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  
 
   :root {
     --green:     #2D6A4F;
@@ -446,7 +442,55 @@ const TG_CHAT_ID = '213542465';
   }
   .btn-del:hover { background: var(--red-lt); }
 
-  .empty-state { text-align: center; padding: 2rem; color: var(--muted); font-size: .875rem; }
+  .delivery-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .delivery-opt {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: .9rem 1rem;
+    cursor: pointer;
+    transition: all .15s;
+    background: var(--cream);
+    text-align: left;
+  }
+  .delivery-opt:hover { border-color: var(--green); background: var(--green-lt); }
+  .delivery-opt.selected { border-color: var(--green); background: var(--green-lt); }
+  .delivery-opt .opt-icon { font-size: 1.4rem; margin-bottom: .3rem; }
+  .delivery-opt .opt-label { font-size: .9rem; font-weight: 500; color: var(--ink); }
+  .delivery-opt .opt-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+  .delivery-opt.selected .opt-label { color: var(--green); }
+  .map-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .map-card iframe { display: block; width: 100%; height: 220px; border: none; }
+  .map-info {
+    padding: .9rem 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    border-top: 1px solid var(--border);
+  }
+  .map-info .map-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .map-info .map-address { font-size: .875rem; }
+  .map-info .map-address strong { display: block; font-weight: 500; margin-bottom: 1px; }
+  .map-info .map-address span { color: var(--muted); font-size: .8rem; }
+  .surcharge-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .5rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: .875rem;
+    color: var(--muted);
+  }
   .empty-state .e-icon { font-size: 2.5rem; margin-bottom: .5rem; }
 
   /* === Auth wall === */
@@ -540,15 +584,85 @@ const AUTH_KEY   = 'ortolano_auth';
 /* CAMBIA QUESTA PASSWORD prima di usare il sito! */
 const ADMIN_PASSWORD = 'orto2025';
 
+/* ===== Telegram — inserisci i tuoi dati ===== */
+const TG_TOKEN   = 'QUI_IL_TUO_TOKEN';   // es. 1234567890:AAFxxxxxxxx
+const TG_CHAT_ID = 'QUI_IL_TUO_CHAT_ID'; // es. 98765432
+
+async function sendTelegramNotification(order){
+  if(!TG_TOKEN || TG_TOKEN.includes('QUI')) return; // non configurato
+  const righe = order.items.map(i=>`  ${i.emoji} ${i.name} ×${i.qty} — €${(i.qty*i.price).toFixed(2)}`).join('\n');
+  const modConsegna = order.delivery === 'consegna'
+    ? `🚚 *Consegna a domicilio* (+€2.00)\n📍 ${order.address}`
+    : `🏡 *Ritiro in loco* — Via della Canapa 14, Bologna`;
+  const testo = [
+    `🌿 *Nuovo ordine — Cà Napà Orticoltura*`,
+    ``,
+    `👤 *${order.name}*`,
+    `📧 ${order.email}`,
+    order.phone ? `📞 ${order.phone}` : null,
+    `🕐 ${order.date} alle ${order.time}`,
+    ``,
+    modConsegna,
+    ``,
+    `*Prodotti ordinati:*`,
+    righe,
+    ``,
+    `💶 *Totale: €${order.total.toFixed(2)}*`,
+    order.note ? `\n📝 _${order.note}_` : null,
+  ].filter(r=>r!==null).join('\n');
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        chat_id: TG_CHAT_ID,
+        text: testo,
+        parse_mode: 'Markdown',
+      }),
+    });
+  } catch(e) {
+    console.warn('Notifica Telegram non inviata:', e);
+  }
+}
+
 const DEFAULT_PRODUCTS = [
-  {id:1, name:'Pomodori',     emoji:'🍅', price:2.50, unit:'kg',    available:true},
-  {id:2, name:'Zucchine',     emoji:'🥒', price:1.80, unit:'kg',    available:true},
-  {id:3, name:'Melanzane',    emoji:'🍆', price:2.20, unit:'kg',    available:true},
-  {id:4, name:'Peperoni',     emoji:'🫑', price:3.00, unit:'kg',    available:true},
-  {id:5, name:'Insalata',     emoji:'🥬', price:1.20, unit:'cespo', available:true},
-  {id:6, name:'Fagiolini',    emoji:'🫘', price:2.80, unit:'kg',    available:false},
-  {id:7, name:'Cetrioli',     emoji:'🥒', price:1.50, unit:'kg',    available:true},
-  {id:8, name:'Cipolla rossa',emoji:'🧅', price:1.20, unit:'kg',    available:false},
+  // Patate — kg (ingrosso bio ~1.80€/kg, vendita diretta +40%)
+  {id:1,  name:'Patate viola a pasta gialla',     emoji:'🥔', price:2.80, unit:'kg',    available:true},
+  {id:2,  name:'Patate gialle a pasta gialla',    emoji:'🥔', price:2.50, unit:'kg',    available:true},
+  // Pomodori — vaschetta 500g (ingrosso bio ciliegino ~3.30€/kg → ~1.80€ a vaschetta; datterino ~3.80€/kg → ~2.00€ a vaschetta 500g)
+  {id:3,  name:'Pomodori ciliegini',              emoji:'🍅', price:2.00, unit:'vaschetta 500g', available:true},
+  {id:4,  name:'Pomodori da insalata',            emoji:'🍅', price:3.50, unit:'kg',    available:true},
+  {id:5,  name:'Pomodori datterini',              emoji:'🍅', price:2.20, unit:'vaschetta 500g', available:true},
+  // Zucchine — al pezzo (ingrosso bio ~3.00€/kg; zucchina media ~200g → ~0.80€/pezzo, vendita diretta)
+  {id:6,  name:'Zucchine Bolognesi chiare',       emoji:'🥒', price:0.80, unit:'pezzo', available:true},
+  {id:7,  name:'Zucchine scure',                  emoji:'🥒', price:0.80, unit:'pezzo', available:true},
+  // Peperoni — confezione 500g (ingrosso bio ~3.80€/kg → ~2.20€ per 500g, vendita diretta)
+  {id:8,  name:'Peperoni gialli',                 emoji:'🫑', price:2.20, unit:'500g',  available:true},
+  // Friggitelli — confezione 500g (simile ai peperoni verdi ~2.70€/kg ingrosso bio)
+  {id:9,  name:'Friggitelli',                     emoji:'🫑', price:1.80, unit:'500g',  available:true},
+  // Cetrioli — al pezzo (ingrosso bio ~2.90€/kg; cetriolo classico ~300g → ~1.00€/pezzo)
+  {id:10, name:'Cetriolo classico',               emoji:'🥒', price:1.00, unit:'pezzo', available:true},
+  // Cetriolo lungo ~400g → ~1.30€/pezzo
+  {id:11, name:'Cetriolo lungo digeribile',       emoji:'🥒', price:1.30, unit:'pezzo', available:true},
+  // Melanzane — al pezzo (ingrosso bio ~2.80€/kg; melanzana lunga ~300g → ~1.00€; tonda ~400g → ~1.30€)
+  {id:12, name:'Melanzana lunga',                 emoji:'🍆', price:1.00, unit:'pezzo', available:true},
+  {id:13, name:'Melanzana tonda',                 emoji:'🍆', price:1.30, unit:'pezzo', available:true},
+  // Insalate — al cespo (ingrosso bio lattuga ~3.00€/kg; cespo ~250g → ~1.50€ vendita diretta)
+  {id:14, name:'Insalata rossa',                  emoji:'🥬', price:1.50, unit:'cespo', available:true},
+  {id:15, name:'Insalata verde',                  emoji:'🥬', price:1.50, unit:'cespo', available:true},
+  // Zucche — kg (ingrosso bio ~2.40€/kg, vendita diretta +30%)
+  {id:16, name:'Zucca violina',                   emoji:'🎃', price:3.00, unit:'kg',    available:true},
+  {id:17, name:'Zucca delica',                    emoji:'🎃', price:2.80, unit:'kg',    available:true},
+  // Aglio — a testa (ingrosso bio aglio secco ~7.00€/kg; testa media ~60g → ~0.80€ aglio, aglione testa ~120g → ~2.50€)
+  {id:18, name:'Aglione',                         emoji:'🧄', price:2.50, unit:'testa', available:true},
+  {id:19, name:'Aglio',                           emoji:'🧄', price:0.80, unit:'testa', available:true},
+  // Cipolle — kg (ingrosso bio bianche ~2.00€/kg, dorate ~1.70€/kg, vendita diretta +40%)
+  {id:20, name:'Cipolle bianche',                 emoji:'🧅', price:2.80, unit:'kg',    available:true},
+  {id:21, name:'Cipolle dorate',                  emoji:'🧅', price:2.40, unit:'kg',    available:true},
+  // Cocomero e melone — kg (ingrosso cocomero ~0.75€/kg, melone ~3.00€/kg; vendita diretta +40%)
+  {id:22, name:'Cocomero',                        emoji:'🍉', price:1.00, unit:'kg',    available:true},
+  {id:23, name:'Melone',                          emoji:'🍈', price:1.80, unit:'kg',    available:true},
 ];
 
 function getProducts(){ try{ const s=localStorage.getItem(PROD_KEY); return s?JSON.parse(s):DEFAULT_PRODUCTS; }catch(e){ return DEFAULT_PRODUCTS; } }
@@ -642,7 +756,11 @@ function goCheckout(){
 
 function renderCheckout(el){
   const inCart = products.filter(p=>cart[p.id]>0);
-  const total  = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
+  const subtotal = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
+  const delivery = window._delivery || 'ritiro';
+  const surcharge = delivery === 'consegna' ? 2.00 : 0;
+  const total = subtotal + surcharge;
+
   el.innerHTML = `
     <div class="checkout-wrap">
       <div class="card">
@@ -652,7 +770,50 @@ function renderCheckout(el){
             <span class="order-line-name">${p.emoji} ${p.name} ×${cart[p.id]}</span>
             <span class="order-line-price">€${(cart[p.id]*p.price).toFixed(2)}</span>
           </div>`).join('')}
+        ${delivery === 'consegna' ? `
+          <div class="surcharge-line">
+            <span>🚚 Contributo consegna</span>
+            <span>€2.00</span>
+          </div>` : ''}
         <div class="order-total"><span>Totale</span><span>€${total.toFixed(2)}</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🚚 Modalità di ritiro</div>
+        <div class="delivery-selector">
+          <button class="delivery-opt ${delivery==='ritiro'?'selected':''}" onclick="setDelivery('ritiro')">
+            <div class="opt-icon">🏡</div>
+            <div class="opt-label">Ritiro in loco</div>
+            <div class="opt-sub">Gratuito</div>
+          </button>
+          <button class="delivery-opt ${delivery==='consegna'?'selected':''}" onclick="setDelivery('consegna')">
+            <div class="opt-icon">🚚</div>
+            <div class="opt-label">Consegna a domicilio</div>
+            <div class="opt-sub">+ €2.00</div>
+          </button>
+        </div>
+        ${delivery === 'ritiro' ? `
+          <div class="map-card">
+            <iframe
+              loading="lazy"
+              src="https://maps.google.com/maps?q=Via+della+Canapa+14,+Bologna&output=embed"
+              allowfullscreen
+              aria-label="Mappa del punto di ritiro">
+            </iframe>
+            <div class="map-info">
+              <span class="map-icon">📍</span>
+              <div class="map-address">
+                <strong>Cà Napà Orticoltura</strong>
+                <span>Via della Canapa 14, Bologna</span>
+              </div>
+            </div>
+          </div>` : `
+          <div class="form-row full">
+            <div class="form-group">
+              <label for="f-address">Indirizzo di consegna *</label>
+              <input id="f-address" type="text" placeholder="Via, numero civico, città" autocomplete="street-address">
+            </div>
+          </div>`}
       </div>
 
       <div class="card">
@@ -678,30 +839,51 @@ function renderCheckout(el){
     </div>`;
 }
 
+function setDelivery(mode){
+  window._delivery = mode;
+  const el = document.getElementById('shop-content');
+  renderCheckout(el);
+}
+
 function submitOrder(){
   const fname = document.getElementById('f-fname').value.trim();
   const lname = document.getElementById('f-lname').value.trim();
   const email = document.getElementById('f-email').value.trim();
   if(!fname||!lname||!email){ alert('Compila almeno nome, cognome ed email.'); return; }
 
-  const inCart = products.filter(p=>cart[p.id]>0);
-  const total  = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
-  const now    = new Date();
-  const order  = {
-    id:    'ORD-' + Date.now(),
-    date:  now.toLocaleDateString('it-IT'),
-    time:  now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),
-    name:  fname + ' ' + lname,
-    email: email,
-    phone: document.getElementById('f-phone').value.trim(),
-    note:  document.getElementById('f-note').value.trim(),
-    items: inCart.map(p=>({name:p.name, emoji:p.emoji, qty:cart[p.id], price:p.price})),
-    total: total,
-    status:'nuovo',
+  const delivery = window._delivery || 'ritiro';
+  if(delivery === 'consegna'){
+    const address = document.getElementById('f-address') ? document.getElementById('f-address').value.trim() : '';
+    if(!address){ alert('Inserisci l\'indirizzo di consegna.'); return; }
+  }
+
+  const inCart  = products.filter(p=>cart[p.id]>0);
+  const subtotal = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
+  const surcharge = delivery === 'consegna' ? 2.00 : 0;
+  const total   = subtotal + surcharge;
+  const address = delivery === 'consegna' && document.getElementById('f-address')
+    ? document.getElementById('f-address').value.trim()
+    : 'Via della Canapa 14, Bologna';
+  const now     = new Date();
+  const order   = {
+    id:       'ORD-' + Date.now(),
+    date:     now.toLocaleDateString('it-IT'),
+    time:     now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),
+    name:     fname + ' ' + lname,
+    email:    email,
+    phone:    document.getElementById('f-phone').value.trim(),
+    note:     document.getElementById('f-note').value.trim(),
+    delivery: delivery,
+    address:  address,
+    items:    inCart.map(p=>({name:p.name, emoji:p.emoji, qty:cart[p.id], price:p.price})),
+    total:    total,
+    status:  'nuovo',
   };
   orders = [order, ...orders];
   saveOrders(orders);
+  sendTelegramNotification(order);
   cart = {};
+  window._delivery = 'ritiro';
   view = 'success';
   renderShop();
 }
