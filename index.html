@@ -631,12 +631,12 @@ const DEFAULT_PRODUCTS = [
   {id:1,  name:'Patate viola a pasta gialla',     emoji:'🥔', price:2.80, unit:'kg',    available:true},
   {id:2,  name:'Patate gialle a pasta gialla',    emoji:'🥔', price:2.50, unit:'kg',    available:true},
   // Pomodori — vaschetta 500g (ingrosso bio ciliegino ~3.30€/kg → ~1.80€ a vaschetta; datterino ~3.80€/kg → ~2.00€ a vaschetta 500g)
-  {id:3,  name:'Pomodori ciliegini',              emoji:'🍅', price:2.00, unit:'vaschetta 500g', available:true},
-  {id:4,  name:'Pomodori da insalata',            emoji:'🍅', price:3.50, unit:'kg',    available:true},
-  {id:5,  name:'Pomodori datterini',              emoji:'🍅', price:2.20, unit:'vaschetta 500g', available:true},
+  {id:3,  name:'Pomodori ciliegini',              emoji:'🍅', price:3.00, unit:'vaschetta 500g', available:true},
+  {id:4,  name:'Pomodori da insalata',            emoji:'🍅', price:5.00, unit:'kg',    available:true},
+  {id:5,  name:'Pomodori datterini',              emoji:'🍅', price:3.00, unit:'vaschetta 500g', available:true},
   // Zucchine — al pezzo (ingrosso bio ~3.00€/kg; zucchina media ~200g → ~0.80€/pezzo, vendita diretta)
   {id:6,  name:'Zucchine Bolognesi chiare',       emoji:'🥒', price:0.80, unit:'pezzo', available:true},
-  {id:7,  name:'Zucchine scure',                  emoji:'🥒', price:0.80, unit:'pezzo', available:true},
+  {id:7,  name:'Zucchine scure',                  emoji:'🥒', price:0.70, unit:'pezzo', available:true},
   // Peperoni — confezione 500g (ingrosso bio ~3.80€/kg → ~2.20€ per 500g, vendita diretta)
   {id:8,  name:'Peperoni gialli',                 emoji:'🫑', price:2.20, unit:'500g',  available:true},
   // Friggitelli — confezione 500g (simile ai peperoni verdi ~2.70€/kg ingrosso bio)
@@ -651,18 +651,22 @@ const DEFAULT_PRODUCTS = [
   // Insalate — al cespo (ingrosso bio lattuga ~3.00€/kg; cespo ~250g → ~1.50€ vendita diretta)
   {id:14, name:'Insalata rossa',                  emoji:'🥬', price:1.50, unit:'cespo', available:true},
   {id:15, name:'Insalata verde',                  emoji:'🥬', price:1.50, unit:'cespo', available:true},
+  // Bietole costa — al cespo (ingrosso bio lattuga ~3.00€/kg; cespo ~250g → ~1.50€ vendita diretta)
+  {id:14, name:'Bietola costa',                   emoji:'🥬', price:2.00, unit:'500g',  available:true},
+  {id:16, name:'Spinaci',                         emoji:'🥬', price:2.50, unit:'500g',  available:true},
+  {id:17, name:'Basilico',                        emoji:'🥬', price:3.75, unit:'250g',  available:true},
   // Zucche — kg (ingrosso bio ~2.40€/kg, vendita diretta +30%)
-  {id:16, name:'Zucca violina',                   emoji:'🎃', price:3.00, unit:'kg',    available:true},
-  {id:17, name:'Zucca delica',                    emoji:'🎃', price:2.80, unit:'kg',    available:true},
+  {id:18, name:'Zucca violina',                   emoji:'🎃', price:2.00, unit:'kg',    available:true},
+  {id:19, name:'Zucca delica',                    emoji:'🎃', price:3.50, unit:'kg',    available:true},
   // Aglio — a testa (ingrosso bio aglio secco ~7.00€/kg; testa media ~60g → ~0.80€ aglio, aglione testa ~120g → ~2.50€)
-  {id:18, name:'Aglione',                         emoji:'🧄', price:2.50, unit:'testa', available:true},
-  {id:19, name:'Aglio',                           emoji:'🧄', price:0.80, unit:'testa', available:true},
+  {id:20, name:'Aglione',                         emoji:'🧄', price:2.50, unit:'testa', available:true},
+  {id:21, name:'Aglio',                           emoji:'🧄', price:0.80, unit:'testa', available:true},
   // Cipolle — kg (ingrosso bio bianche ~2.00€/kg, dorate ~1.70€/kg, vendita diretta +40%)
-  {id:20, name:'Cipolle bianche',                 emoji:'🧅', price:2.80, unit:'kg',    available:true},
-  {id:21, name:'Cipolle dorate',                  emoji:'🧅', price:2.40, unit:'kg',    available:true},
+  {id:22, name:'Cipolle bianche',                 emoji:'🧅', price:2.80, unit:'kg',    available:true},
+  {id:23, name:'Cipolle dorate',                  emoji:'🧅', price:2.40, unit:'kg',    available:true},
   // Cocomero e melone — kg (ingrosso cocomero ~0.75€/kg, melone ~3.00€/kg; vendita diretta +40%)
-  {id:22, name:'Cocomero',                        emoji:'🍉', price:1.00, unit:'kg',    available:true},
-  {id:23, name:'Melone',                          emoji:'🍈', price:1.80, unit:'kg',    available:true},
+  {id:24, name:'Cocomero',                        emoji:'🍉', price:2.00, unit:'kg',    available:true},
+  {id:25, name:'Melone',                          emoji:'🍈', price:3.50, unit:'kg',    available:true},
 ];
 
 function getProducts(){ try{ const s=localStorage.getItem(PROD_KEY); return s?JSON.parse(s):DEFAULT_PRODUCTS; }catch(e){ return DEFAULT_PRODUCTS; } }
