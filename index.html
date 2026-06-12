@@ -7,8 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <style>
 
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+<style>
   /* === Reset & base === */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -72,25 +75,6 @@
     gap: .5rem;
   }
   .logo span { font-size: 1.5rem; }
-  .tab-nav {
-    display: flex;
-    gap: 4px;
-    background: rgba(255,255,255,.15);
-    border-radius: var(--radius-sm);
-    padding: 3px;
-  }
-  .tab-btn {
-    padding: 6px 14px;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: rgba(255,255,255,.75);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .tab-btn.active { background: #fff; color: var(--green); }
 
   /* === Sections === */
   .section { display: none; }
@@ -143,7 +127,6 @@
     transition: box-shadow .15s;
   }
   .product-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
-  .product-card.unavailable { opacity: .4; pointer-events: none; }
   .product-emoji { font-size: 2.2rem; margin-bottom: .6rem; line-height: 1; }
   .product-name { font-weight: 500; font-size: .95rem; margin-bottom: 2px; }
   .product-price { font-size: .85rem; color: var(--green); font-weight: 500; margin-bottom: 2px; }
@@ -359,30 +342,6 @@
   .admin-prod-info { flex: 1; min-width: 0; }
   .admin-prod-name { font-size: .875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .admin-prod-price { font-size: .78rem; color: var(--muted); }
-  .toggle-wrap { flex-shrink: 0; }
-  .toggle {
-    width: 36px;
-    height: 20px;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    transition: background .2s;
-  }
-  .toggle.on { background: var(--green); }
-  .toggle.off { background: #C4C4B8; }
-  .toggle::after {
-    content: '';
-    position: absolute;
-    left: 3px;
-    top: 3px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #fff;
-    transition: transform .2s;
-  }
-  .toggle.on::after { transform: translateX(16px); }
 
   .btn-add {
     padding: .55rem 1rem;
@@ -464,34 +423,7 @@
   .delivery-opt .opt-label { font-size: .9rem; font-weight: 500; color: var(--ink); }
   .delivery-opt .opt-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
   .delivery-opt.selected .opt-label { color: var(--green); }
-  .map-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    margin-bottom: 1.25rem;
-  }
-  .map-card iframe { display: block; width: 100%; height: 220px; border: none; }
-  .map-info {
-    padding: .9rem 1.1rem;
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    border-top: 1px solid var(--border);
-  }
-  .map-info .map-icon { font-size: 1.3rem; flex-shrink: 0; }
-  .map-info .map-address { font-size: .875rem; }
-  .map-info .map-address strong { display: block; font-weight: 500; margin-bottom: 1px; }
-  .map-info .map-address span { color: var(--muted); font-size: .8rem; }
-  .surcharge-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: .5rem 0;
-    border-bottom: 1px solid var(--border);
-    font-size: .875rem;
-    color: var(--muted);
-  }
+  
   .empty-state .e-icon { font-size: 2.5rem; margin-bottom: .5rem; }
 
   /* === Auth wall === */
@@ -531,14 +463,11 @@
     .stats-row { grid-template-columns: repeat(3, 1fr); }
     .shop-hero h1 { font-size: 1.4rem; }
     .logo { font-size: 1.1rem; }
-    .tab-btn { padding: 5px 10px; font-size: 12px; }
     .admin-products { grid-template-columns: repeat(2, 1fr); }
   }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -549,130 +478,32 @@
 </header>
 
 <main>
-  <!-- ===================== SHOP ===================== -->
   <div id="shop" class="section active" role="tabpanel">
-
-    <!-- Shop hero -->
     <div class="shop-hero">
       <div class="container">
         <h1>Ortaggi freschi a km 0</h1>
-        <p>Cà Napà Orticoltura — freschezza a portata di mano.</p>
+        <p>Cà Napà Orticoltura — scegli quello che vuoi, ti contatto io per la consegna.</p>
       </div>
     </div>
-
     <div class="container" id="shop-content">
-      <!-- rendered by JS -->
-    </div>
-
+      </div>
   </div>
 
-  <!-- ===================== ADMIN ===================== -->
   <div id="admin" class="section" role="tabpanel">
     <div id="admin-content"></div>
   </div>
 </main>
 
 <footer>
-  <div class="container">
-    Cà Napà Orticoltura
-  </div>
+  <div class="container">Cà Napà Orticoltura</div>
 </footer>
 
 <script>
-/* ===== Dati & storage ===== */
-const PROD_KEY   = 'ortolano_products_v2';
-const ORDER_KEY  = 'ortolano_orders_v2';
-const AUTH_KEY   = 'ortolano_auth';
+/* ========================================================================= */
+/* 1. CONFIGURAZIONE FIREBASE E CREDENZIALI                                  */
+/* ========================================================================= */
 
-/* CAMBIA QUESTA PASSWORD prima di usare il sito! */
-const ADMIN_PASSWORD = 'orto2025';
-
-/* ===== Telegram — inserisci i tuoi dati ===== */
-const TG_TOKEN   = '8817936267:AAHD6L3qpsgz2bN76mWADWJy-G6gUJfNyD8';
-const TG_CHAT_ID = '213542465';
-
-async function sendTelegramNotification(order){
-  if(!TG_TOKEN || TG_TOKEN.includes('QUI')) return; // non configurato
-  const righe = order.items.map(i=>`  ${i.emoji} ${i.name} ×${i.qty} — €${(i.qty*i.price).toFixed(2)}`).join('\n');
-  const modConsegna = order.delivery === 'consegna'
-    ? `🚚 *Consegna a domicilio* (+€2.00)\n📍 ${order.address}`
-    : `🏡 *Ritiro in loco* — Via della Canapa 14, Bologna`;
-  const testo = [
-    `🌿 *Nuovo ordine — Cà Napà Orticoltura*`,
-    ``,
-    `👤 *${order.name}*`,
-    `📧 ${order.email}`,
-    order.phone ? `📞 ${order.phone}` : null,
-    `🕐 ${order.date} alle ${order.time}`,
-    ``,
-    modConsegna,
-    ``,
-    `*Prodotti ordinati:*`,
-    righe,
-    ``,
-    `💶 *Totale: €${order.total.toFixed(2)}*`,
-    order.note ? `\n📝 _${order.note}_` : null,
-  ].filter(r=>r!==null).join('\n');
-
-  try {
-    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        chat_id: TG_CHAT_ID,
-        text: testo,
-        parse_mode: 'Markdown',
-      }),
-    });
-  } catch(e) {
-    console.warn('Notifica Telegram non inviata:', e);
-  }
-}
-
-const DEFAULT_PRODUCTS = [
-  // Patate — kg (ingrosso bio ~1.80€/kg, vendita diretta +40%)
-  {id:1,  name:'Patate viola a pasta gialla',     emoji:'🥔', price:2.80, unit:'kg',    available:true},
-  {id:2,  name:'Patate gialle a pasta gialla',    emoji:'🥔', price:2.50, unit:'kg',    available:true},
-  // Pomodori — vaschetta 500g (ingrosso bio ciliegino ~3.30€/kg → ~1.80€ a vaschetta; datterino ~3.80€/kg → ~2.00€ a vaschetta 500g)
-  {id:3,  name:'Pomodori ciliegini',              emoji:'🍅', price:3.00, unit:'vaschetta 500g', available:true},
-  {id:4,  name:'Pomodori da insalata',            emoji:'🍅', price:5.00, unit:'kg',    available:true},
-  {id:5,  name:'Pomodori datterini',              emoji:'🍅', price:3.00, unit:'vaschetta 500g', available:true},
-  // Zucchine — al pezzo (ingrosso bio ~3.00€/kg; zucchina media ~200g → ~0.80€/pezzo, vendita diretta)
-  {id:6,  name:'Zucchine Bolognesi chiare',       emoji:'🥒', price:0.80, unit:'pezzo', available:true},
-  {id:7,  name:'Zucchine scure',                  emoji:'🥒', price:0.70, unit:'pezzo', available:true},
-  // Peperoni — confezione 500g (ingrosso bio ~3.80€/kg → ~2.20€ per 500g, vendita diretta)
-  {id:8,  name:'Peperoni gialli',                 emoji:'🫑', price:2.20, unit:'500g',  available:true},
-  // Friggitelli — confezione 500g (simile ai peperoni verdi ~2.70€/kg ingrosso bio)
-  {id:9,  name:'Friggitelli',                     emoji:'🫑', price:1.80, unit:'500g',  available:true},
-  // Cetrioli — al pezzo (ingrosso bio ~2.90€/kg; cetriolo classico ~300g → ~1.00€/pezzo)
-  {id:10, name:'Cetriolo classico',               emoji:'🥒', price:1.00, unit:'pezzo', available:true},
-  // Cetriolo lungo ~400g → ~1.30€/pezzo
-  {id:11, name:'Cetriolo lungo digeribile',       emoji:'🥒', price:1.30, unit:'pezzo', available:true},
-  // Melanzane — al pezzo (ingrosso bio ~2.80€/kg; melanzana lunga ~300g → ~1.00€; tonda ~400g → ~1.30€)
-  {id:12, name:'Melanzana lunga',                 emoji:'🍆', price:1.00, unit:'pezzo', available:true},
-  {id:13, name:'Melanzana tonda',                 emoji:'🍆', price:1.30, unit:'pezzo', available:true},
-  // Insalate — al cespo (ingrosso bio lattuga ~3.00€/kg; cespo ~250g → ~1.50€ vendita diretta)
-  {id:14, name:'Insalata rossa',                  emoji:'🥬', price:1.50, unit:'cespo', available:true},
-  {id:15, name:'Insalata verde',                  emoji:'🥬', price:1.50, unit:'cespo', available:true},
-  // Bietole costa — al cespo (ingrosso bio lattuga ~3.00€/kg; cespo ~250g → ~1.50€ vendita diretta)
-  {id:14, name:'Bietola costa',                   emoji:'🥬', price:2.00, unit:'500g',  available:true},
-  {id:16, name:'Spinaci',                         emoji:'🥬', price:2.50, unit:'500g',  available:true},
-  {id:17, name:'Basilico',                        emoji:'🥬', price:3.75, unit:'250g',  available:true},
-  // Zucche — kg (ingrosso bio ~2.40€/kg, vendita diretta +30%)
-  {id:18, name:'Zucca violina',                   emoji:'🎃', price:2.00, unit:'kg',    available:true},
-  {id:19, name:'Zucca delica',                    emoji:'🎃', price:3.50, unit:'kg',    available:true},
-  // Aglio — a testa (ingrosso bio aglio secco ~7.00€/kg; testa media ~60g → ~0.80€ aglio, aglione testa ~120g → ~2.50€)
-  {id:20, name:'Aglione',                         emoji:'🧄', price:2.50, unit:'testa', available:true},
-  {id:21, name:'Aglio',                           emoji:'🧄', price:0.80, unit:'testa', available:true},
-  // Cipolle — kg (ingrosso bio bianche ~2.00€/kg, dorate ~1.70€/kg, vendita diretta +40%)
-  {id:22, name:'Cipolle bianche',                 emoji:'🧅', price:2.80, unit:'kg',    available:true},
-  {id:23, name:'Cipolle dorate',                  emoji:'🧅', price:2.40, unit:'kg',    available:true},
-  // Cocomero e melone — kg (ingrosso cocomero ~0.75€/kg, melone ~3.00€/kg; vendita diretta +40%)
-  {id:24, name:'Cocomero',                        emoji:'🍉', price:2.00, unit:'kg',    available:true},
-  {id:25, name:'Melone',                          emoji:'🍈', price:3.50, unit:'kg',    available:true},
-];
-
-  const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyDrb2ATcEYDR_-P9btsM7d7YHKnUl_pa-o",
   authDomain: "ca-napa-orto.firebaseapp.com",
   projectId: "ca-napa-orto",
@@ -681,52 +512,99 @@ const DEFAULT_PRODUCTS = [
   appId: "1:5836504228:web:32f691786f0b962fb7fa31",
   measurementId: "G-9L9ZYKEC1F"
 };
-  // Inizializza Firebase
+
+// Inizializza Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* Sincronizzazione in tempo reale degli ordini */
+/* CAMBIA QUESTA PASSWORD prima di usare il sito! */
+const ADMIN_PASSWORD = 'orto2026';
+
+/* TELEGRAM — inserisci i tuoi dati */
+const TG_TOKEN   = '8817936267:AAHD6L3qpsgz2bN76mWADWJy-G6gUJfNyD8';   
+const TG_CHAT_ID = '213542465'; 
+
+/* ========================================================================= */
+/* 2. STATO APP E DATI DI DEFAULT                                            */
+/* ========================================================================= */
+
+const DEFAULT_PRODUCTS = [
+  {id:1,  name:'Patate viola a pasta gialla',     emoji:'🥔', price:2.80, unit:'kg',    available:true, comingSoon:false},
+  {id:2,  name:'Patate gialle a pasta gialla',    emoji:'🥔', price:2.50, unit:'kg',    available:true, comingSoon:false},
+  {id:3,  name:'Pomodori ciliegini',              emoji:'🍅', price:2.00, unit:'vaschetta', available:true, comingSoon:false},
+  {id:4,  name:'Pomodori da insalata',            emoji:'🍅', price:3.50, unit:'kg',    available:true, comingSoon:false},
+  {id:5,  name:'Pomodori datterini',              emoji:'🍅', price:2.20, unit:'vaschetta', available:true, comingSoon:false},
+  {id:6,  name:'Zucchine Bolognesi chiare',       emoji:'🥒', price:0.80, unit:'pezzo', available:true, comingSoon:false},
+  {id:7,  name:'Zucchine scure',                  emoji:'🥒', price:0.80, unit:'pezzo', available:true, comingSoon:false},
+  {id:8,  name:'Peperoni gialli',                 emoji:'🫑', price:2.20, unit:'500g',  available:true, comingSoon:false},
+  {id:9,  name:'Friggitelli',                     emoji:'🫑', price:1.80, unit:'500g',  available:true, comingSoon:false},
+  {id:10, name:'Cetriolo classico',               emoji:'🥒', price:1.00, unit:'pezzo', available:true, comingSoon:false},
+  {id:11, name:'Cetriolo lungo digeribile',       emoji:'🥒', price:1.30, unit:'pezzo', available:true, comingSoon:false},
+  {id:12, name:'Melanzana lunga',                 emoji:'🍆', price:1.00, unit:'pezzo', available:true, comingSoon:false},
+  {id:13, name:'Melanzana tonda',                 emoji:'🍆', price:1.30, unit:'pezzo', available:true, comingSoon:false},
+  {id:14, name:'Insalata rossa',                  emoji:'🥬', price:1.50, unit:'cespo', available:true, comingSoon:false},
+  {id:15, name:'Insalata verde',                  emoji:'🥬', price:1.50, unit:'cespo', available:true, comingSoon:false},
+  {id:16, name:'Zucca violina',                   emoji:'🎃', price:3.00, unit:'kg',    available:true, comingSoon:false},
+  {id:17, name:'Zucca delica',                    emoji:'🎃', price:2.80, unit:'kg',    available:true, comingSoon:false},
+  {id:18, name:'Aglione',                         emoji:'🧄', price:2.50, unit:'testa', available:true, comingSoon:false},
+  {id:19, name:'Aglio',                           emoji:'🧄', price:0.80, unit:'testa', available:true, comingSoon:false},
+  {id:20, name:'Cipolle bianche',                 emoji:'🧅', price:2.80, unit:'kg',    available:true, comingSoon:false},
+  {id:21, name:'Cipolle dorate',                  emoji:'🧅', price:2.40, unit:'kg',    available:true, comingSoon:false},
+  {id:22, name:'Cocomero',                        emoji:'🍉', price:1.00, unit:'kg',    available:true, comingSoon:false},
+  {id:23, name:'Melone',                          emoji:'🍈', price:1.80, unit:'kg',    available:true, comingSoon:false},
+];
+
+const AUTH_KEY = 'ortolano_auth';
+let cart     = {};
+let view     = 'list'; 
+let products = [];
+let orders   = [];
+const IS_ADMIN_MODE = window.location.search.includes('admin');
+
+function isAuth(){ return sessionStorage.getItem(AUTH_KEY)==='1'; }
+function setAuth(v){ if(v) sessionStorage.setItem(AUTH_KEY,'1'); else sessionStorage.removeItem(AUTH_KEY); }
+
+/* ========================================================================= */
+/* 3. SINCRONIZZAZIONE FIREBASE IN TEMPO REALE                               */
+/* ========================================================================= */
+
+// Sincronizza Ordini
 db.collection("orders").onSnapshot((snapshot) => {
-  orders = []; // Svuota l'array locale
-  snapshot.forEach((doc) => {
-    orders.push(doc.data());
-  });
-  
-  // Metti gli ordini più recenti in alto
+  orders = []; 
+  snapshot.forEach((doc) => orders.push(doc.data()));
   orders.sort((a,b) => b.id.localeCompare(a.id)); 
   
-  // Se sei nella schermata admin, ricaricala per mostrare i nuovi ordini!
   if(document.getElementById('admin') && document.getElementById('admin').classList.contains('active')){
     renderAdmin();
   }
 });
-function isAuth(){ return sessionStorage.getItem(AUTH_KEY)==='1'; }
-function setAuth(v){ if(v) sessionStorage.setItem(AUTH_KEY,'1'); else sessionStorage.removeItem(AUTH_KEY); }
 
-/* ===== Stato ===== */
-let cart   = {};
-let view   = 'list'; /* list | checkout | success */
-let products = [];
-let orders   = [];
+// Sincronizza Prodotti
+db.collection("products").onSnapshot((snapshot) => {
+  if (snapshot.empty) {
+    // Se il database è vuoto, carica la lista iniziale
+    DEFAULT_PRODUCTS.forEach(p => {
+      db.collection("products").doc(p.id.toString()).set(p);
+    });
+    return;
+  }
+  
+  products = [];
+  snapshot.forEach((doc) => products.push(doc.data()));
+  products.sort((a,b) => a.id - b.id);
+  
+  if (document.getElementById('shop') && document.getElementById('shop').classList.contains('active')) renderShop();
+  if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) renderAdmin();
+});
 
-/* ===== Navigazione tab ===== */
-const IS_ADMIN_MODE = window.location.search.includes('admin');
+/* ========================================================================= */
+/* 4. GESTIONE SHOP E CHECKOUT (LATO CLIENTE)                                */
+/* ========================================================================= */
 
-function switchTab(t){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
-    const mine = ['shop','admin'][i]===t;
-    b.classList.toggle('active', mine);
-    b.setAttribute('aria-selected', mine);
-  });
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.getElementById(t).classList.add('active');
-  if(t==='shop') renderShop();
-  else            renderAdmin();
-}
-
-/* ===== SHOP ===== */
 function renderShop(){
   const el = document.getElementById('shop-content');
+  
+  // Schermata di successo
   if(view==='success'){
     el.innerHTML = `
       <div class="success-screen">
@@ -737,9 +615,11 @@ function renderShop(){
       </div>`;
     return;
   }
+  
+  // Schermata checkout
   if(view==='checkout'){ renderCheckout(el); return; }
 
-  // 1. FILTRIAMO I PRODOTTI: divisi tra disponibili ora e prossimamente
+  // Filtra i prodotti
   const avail = products.filter(p => p.available && !p.comingSoon);
   const coming = products.filter(p => p.comingSoon);
   
@@ -794,41 +674,6 @@ function renderShop(){
         <button class="btn-cart" onclick="goCheckout()">Procedi →</button>
       </div>` : ''}`;
 }
-  if(view==='checkout'){ renderCheckout(el); return; }
-
-  const avail = products.filter(p=>p.available);
-  const inCart = products.filter(p=>cart[p.id]>0);
-  const total  = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
-  const count  = Object.values(cart).reduce((a,b)=>a+b, 0);
-
-  el.innerHTML = `
-    <div class="notice">
-      <span class="icon">🌱</span>
-      Disponibilità aggiornata ogni settimana. Ordina entro domenica sera.
-    </div>
-    <div class="products-grid" role="list">
-      ${avail.map(p=>`
-        <div class="product-card" role="listitem">
-          <div class="product-emoji" aria-hidden="true">${p.emoji}</div>
-          <div class="product-name">${p.name}</div>
-          <div class="product-price">€${p.price.toFixed(2)}</div>
-          <div class="product-unit">al ${p.unit}</div>
-          <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
-            <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci">−</button>
-            <span class="qty-num" id="qty-${p.id}" aria-live="polite">${cart[p.id]||0}</span>
-            <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta">+</button>
-          </div>
-        </div>`).join('')}
-    </div>
-    ${count>0?`
-      <div class="cart-bar" role="complementary" aria-label="Carrello">
-        <div>
-          <div class="cart-total">€${total.toFixed(2)}</div>
-          <div class="cart-count">${count} ${count===1?'prodotto':'prodotti'} selezionati</div>
-        </div>
-        <button class="btn-cart" onclick="goCheckout()">Procedi →</button>
-      </div>`:''}`;
-}
 
 function changeQty(id, d){
   cart[id] = (cart[id]||0) + d;
@@ -859,9 +704,8 @@ function renderCheckout(el){
             <span class="order-line-price">€${(cart[p.id]*p.price).toFixed(2)}</span>
           </div>`).join('')}
         ${delivery === 'consegna' ? `
-          <div class="surcharge-line">
-            <span>🚚 Contributo consegna</span>
-            <span>€2.00</span>
+          <div class="order-line" style="color:var(--muted)">
+            <span>🚚 Contributo consegna</span><span>€2.00</span>
           </div>` : ''}
         <div class="order-total"><span>Totale</span><span>€${total.toFixed(2)}</span></div>
       </div>
@@ -880,44 +724,29 @@ function renderCheckout(el){
             <div class="opt-sub">+ €2.00</div>
           </button>
         </div>
-        ${delivery === 'ritiro' ? `
-          <div class="map-card">
-            <iframe
-              loading="lazy"
-              src="https://maps.google.com/maps?q=Via+della+Canapa+14,+Bologna&output=embed"
-              allowfullscreen
-              aria-label="Mappa del punto di ritiro">
-            </iframe>
-            <div class="map-info">
-              <span class="map-icon">📍</span>
-              <div class="map-address">
-                <strong>Cà Napà Orticoltura</strong>
-                <span>Via della Canapa 14, Bologna</span>
-              </div>
-            </div>
-          </div>` : `
+        ${delivery === 'consegna' ? `
           <div class="form-row full">
             <div class="form-group">
-              <label for="f-address">Indirizzo di consegna *</label>
-              <input id="f-address" type="text" placeholder="Via, numero civico, città" autocomplete="street-address">
+              <label>Indirizzo di consegna *</label>
+              <input id="f-address" type="text" placeholder="Via, numero civico, città">
             </div>
-          </div>`}
+          </div>` : ''}
       </div>
 
       <div class="card">
         <div class="card-title">👤 I tuoi dati</div>
         <div class="form-row">
-          <div class="form-group"><label for="f-fname">Nome *</label><input id="f-fname" type="text" placeholder="Mario" autocomplete="given-name"></div>
-          <div class="form-group"><label for="f-lname">Cognome *</label><input id="f-lname" type="text" placeholder="Rossi" autocomplete="family-name"></div>
+          <div class="form-group"><label>Nome *</label><input id="f-fname" type="text"></div>
+          <div class="form-group"><label>Cognome *</label><input id="f-lname" type="text"></div>
         </div>
         <div class="form-row full">
-          <div class="form-group"><label for="f-email">Email *</label><input id="f-email" type="email" placeholder="mario@email.it" autocomplete="email"></div>
+          <div class="form-group"><label>Email *</label><input id="f-email" type="email"></div>
         </div>
         <div class="form-row full">
-          <div class="form-group"><label for="f-phone">Telefono</label><input id="f-phone" type="tel" placeholder="+39 333 000 0000" autocomplete="tel"></div>
+          <div class="form-group"><label>Telefono</label><input id="f-phone" type="tel"></div>
         </div>
         <div class="form-row full">
-          <div class="form-group"><label for="f-note">Note (preferenze, allergeni…)</label><textarea id="f-note" placeholder="Scrivi qui eventuali note…"></textarea></div>
+          <div class="form-group"><label>Note</label><textarea id="f-note"></textarea></div>
         </div>
         <div class="form-actions">
           <button class="btn-back" onclick="view='list';renderShop()">← Torna</button>
@@ -929,8 +758,7 @@ function renderCheckout(el){
 
 function setDelivery(mode){
   window._delivery = mode;
-  const el = document.getElementById('shop-content');
-  renderCheckout(el);
+  renderShop();
 }
 
 function submitOrder(){
@@ -940,19 +768,16 @@ function submitOrder(){
   if(!fname||!lname||!email){ alert('Compila almeno nome, cognome ed email.'); return; }
 
   const delivery = window._delivery || 'ritiro';
-  if(delivery === 'consegna'){
-    const address = document.getElementById('f-address') ? document.getElementById('f-address').value.trim() : '';
-    if(!address){ alert('Inserisci l\'indirizzo di consegna.'); return; }
+  if(delivery === 'consegna' && !document.getElementById('f-address').value.trim()){
+    alert('Inserisci l\'indirizzo di consegna.'); return; 
   }
 
   const inCart  = products.filter(p=>cart[p.id]>0);
   const subtotal = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
-  const surcharge = delivery === 'consegna' ? 2.00 : 0;
-  const total   = subtotal + surcharge;
-  const address = delivery === 'consegna' && document.getElementById('f-address')
-    ? document.getElementById('f-address').value.trim()
-    : 'Via della Canapa 14, Bologna';
+  const total   = subtotal + (delivery === 'consegna' ? 2 : 0);
+  const address = delivery === 'consegna' ? document.getElementById('f-address').value.trim() : 'Ritiro in loco';
   const now     = new Date();
+  
   const order   = {
     id:       'ORD-' + Date.now(),
     date:     now.toLocaleDateString('it-IT'),
@@ -967,43 +792,44 @@ function submitOrder(){
     total:    total,
     status:  'nuovo',
   };
-  orders = [order, ...orders];
+
+  // Salva ordine su FIREBASE
   db.collection("orders").doc(order.id).set(order)
-  .then(() => console.log("Ordine inviato in cloud!"))
-  .catch((e) => console.error("Errore: ", e));
-  cart = {};
-  window._delivery = 'ritiro';
-  view = 'success';
-  renderShop();
+    .then(() => {
+      sendTelegramNotification(order);
+      cart = {};
+      window._delivery = 'ritiro';
+      view = 'success';
+      renderShop();
+    })
+    .catch((e) => alert("Errore durante l'invio: " + e));
 }
-db.collection("products").onSnapshot((snapshot) => {
-  if (snapshot.empty) {
-    // Se il database cloud è vuoto, carichiamo la lista di default automaticamente!
-    DEFAULT_PRODUCTS.forEach(p => {
-      db.collection("products").doc(p.id.toString()).set(p);
-    });
-    return;
-  }
-  
-  products = [];
-  snapshot.forEach((doc) => {
-    products.push(doc.data());
-  });
-  
-  // Riordiniamo i prodotti per ID per mantenerli nel giusto ordine
-  products.sort((a,b) => a.id - b.id);
-  
-  // Aggiorniamo lo schermo
-  if (document.getElementById('shop').classList.contains('active')) renderShop();
-  if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) renderAdmin();
-});
+
 function resetShop(){
   cart = {};
   view = 'list';
   renderShop();
 }
 
-/* ===== ADMIN ===== */
+async function sendTelegramNotification(order){
+  if(!TG_TOKEN || TG_TOKEN.includes('QUI')) return; 
+  const righe = order.items.map(i=>`  ${i.emoji} ${i.name} ×${i.qty} — €${(i.qty*i.price).toFixed(2)}`).join('\n');
+  const modConsegna = order.delivery === 'consegna' ? `🚚 Consegna\n📍 ${order.address}` : `🏡 Ritiro in loco`;
+  const testo = `🌿 Nuovo ordine\n\n👤 ${order.name}\n📞 ${order.phone}\n\n${modConsegna}\n\nProdotti:\n${righe}\n\nTotale: €${order.total.toFixed(2)}`;
+  
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: TG_CHAT_ID, text: testo })
+    });
+  } catch(e) {}
+}
+
+/* ========================================================================= */
+/* 5. GESTIONE PANNELLO ADMIN                                                */
+/* ========================================================================= */
+
 function renderAdmin(){
   const el = document.getElementById('admin-content');
   if(!isAuth()){ renderAuthWall(el); return; }
@@ -1030,7 +856,7 @@ function renderAdmin(){
 
       <div style="margin-bottom:1.75rem;">
         <div class="section-title">
-          <span>🥦 Disponibilità questa settimana</span>
+          <span>🥦 Gestione Catalogo</span>
           <button class="btn-add" onclick="openAddProduct()">+ Aggiungi</button>
         </div>
         <div class="admin-products">
@@ -1047,10 +873,10 @@ function renderAdmin(){
               <select class="status-sel" style="width: 100%; padding: 4px;" onchange="updateProductStatus('${p.id}', this.value)">
                 <option value="disponibile" ${p.available && !p.comingSoon ? 'selected' : ''}>🟢 Disponibile ora</option>
                 <option value="prossimamente" ${p.comingSoon ? 'selected' : ''}>🚀 Prossimamente</option>
-                <option value="nascosto" ${!p.available && !p.comingSoon ? 'selected' : ''}>⚪ Nascondi prodotto</option>
+                <option value="nascosto" ${!p.available && !p.comingSoon ? 'selected' : ''}>⚪ Nascondi</option>
               </select>
-            </div>
             </div>`).join('')}
+        </div>
       </div>
 
       <div>
@@ -1064,10 +890,11 @@ function renderAdmin(){
                   <div class="order-head">
                     <span class="order-name-text">${o.name}</span>
                     <span class="badge ${o.status==='nuovo'?'new':o.status==='confermato'?'confirmed':'delivered'}">
-                      ${o.status==='nuovo'?'Nuovo':o.status==='confermato'?'Confermato':'Consegnato'}
+                      ${o.status}
                     </span>
                   </div>
                   <div class="order-meta-text">${o.date} ${o.time} · ${o.email}${o.phone?' · '+o.phone:''}</div>
+                  <div class="order-meta-text" style="color:var(--earth)">📍 ${o.delivery === 'consegna' ? o.address : 'Ritiro in loco'}</div>
                   <div class="order-items-text">${o.items.map(i=>i.emoji+' '+i.name+' ×'+i.qty).join(', ')}</div>
                   ${o.note?`<div class="order-note">📝 ${o.note}</div>`:''}
                 </div>
@@ -1091,91 +918,55 @@ function renderAuthWall(el){
     <div class="auth-wall">
       <div style="font-size:2.5rem;margin-bottom:.75rem;">🔒</div>
       <h2>Area riservata</h2>
-      <p>Inserisci la password per accedere al pannello admin.</p>
+      <p>Inserisci la password per accedere.</p>
       <div class="auth-form">
-        <input id="auth-pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doAuth()">
+        <input id="auth-pw" type="password" onkeydown="if(event.key==='Enter')doAuth()">
         <button class="btn-primary" onclick="doAuth()">Accedi</button>
       </div>
     </div>`;
 }
 
 function doAuth(){
-  const pw = document.getElementById('auth-pw').value;
-  if(pw === ADMIN_PASSWORD){
-    setAuth(true);
-    renderAdmin();
-  } else {
-    alert('Password errata.');
-  }
+  if(document.getElementById('auth-pw').value === ADMIN_PASSWORD){
+    setAuth(true); renderAdmin();
+  } else alert('Password errata.');
 }
+function logout(){ setAuth(false); renderAdmin(); }
 
-function logout(){
-  setAuth(false);
-  renderAdmin();
-}
-
-function toggleProduct(id){
-  // Trova il prodotto cliccato
-  const prod = products.find(p => p.id === id);
-  if(prod) {
-    // Aggiorna solo lo stato 'available' su Firebase invertendolo (true/false)
-    db.collection("products").doc(id.toString()).update({ available: !prod.available });
-  }
-}
+/* --- Firebase Update Functions --- */
 
 function updateProductStatus(id, status) {
   let updateData = {};
+  if (status === 'disponibile') { updateData = { available: true, comingSoon: false }; } 
+  else if (status === 'prossimamente') { updateData = { available: false, comingSoon: true }; } 
+  else if (status === 'nascosto') { updateData = { available: false, comingSoon: false }; }
   
-  if (status === 'disponibile') {
-    updateData = { available: true, comingSoon: false };
-  } else if (status === 'prossimamente') {
-    updateData = { available: false, comingSoon: true };
-  } else if (status === 'nascosto') {
-    updateData = { available: false, comingSoon: false };
-  }
-  
-  // Aggiorna direttamente Firebase
-  db.collection("products").doc(id.toString()).update(updateData)
-    .then(() => console.log("Stato prodotto aggiornato cloud!"))
-    .catch((e) => console.error("Errore aggiornamento prodotto:", e));
-}
-  
-function updateStatus(id, status){
-  db.collection("orders").doc(id).update({ status: status });
-}
-
-function deleteOrder(id){
-  if(!confirm('Eliminare definitivamente questo ordine?')) return;
-  db.collection("orders").doc(id).delete();
+  db.collection("products").doc(id.toString()).update(updateData);
 }
 
 function openAddProduct(){
-  const name  = prompt('Nome del prodotto:');
-  if(!name) return;
+  const name = prompt('Nome del prodotto:'); if(!name) return;
   const emoji = prompt('Emoji (es. 🥕):','🥦') || '🥦';
-  const priceRaw = prompt('Prezzo (€ per unità):','2.00');
-  if(priceRaw===null) return;
-  const price = parseFloat(priceRaw.replace(',','.'));
-  if(isNaN(price)){ alert('Prezzo non valido.'); return; }
-  const unit = prompt('Unità di misura (es. kg, cespo, mazzo):','kg') || 'kg';
+  const price = parseFloat((prompt('Prezzo (€):','2.00')||'').replace(',','.'));
+  if(isNaN(price)) return alert('Prezzo non valido.');
+  const unit = prompt('Unità (es. kg, pezzo):','kg') || 'kg';
   
-  const newId = Date.now(); // Usiamo la data come ID univoco numerico
-  const newProduct = {id: newId, name, emoji, price, unit, available: true};
-  
-  // Salviamo il nuovo prodotto su Firebase
-  db.collection("products").doc(newId.toString()).set(newProduct);
+  const newId = Date.now();
+  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false});
 }
 
-/* ===== Init ===== */
+function updateStatus(id, status){ db.collection("orders").doc(id).update({ status: status }); }
+function deleteOrder(id){ if(confirm('Eliminare ordine?')) db.collection("orders").doc(id).delete(); }
+
+/* ========================================================================= */
+/* 6. INIZIALIZZAZIONE SCHERMATA                                             */
+/* ========================================================================= */
+
 if(IS_ADMIN_MODE){
-  /* Mostra il tab admin e apri il pannello */
   document.getElementById('admin').classList.add('active');
   document.getElementById('shop').classList.remove('active');
-  renderAdmin();
 } else {
-  /* Nasconde completamente la sezione admin */
   document.getElementById('admin').remove();
-  renderShop();
 }
 </script>
 
