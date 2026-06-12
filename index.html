@@ -739,6 +739,63 @@ function renderShop(){
   }
   if(view==='checkout'){ renderCheckout(el); return; }
 
+  // 1. FILTRIAMO I PRODOTTI: divisi tra disponibili ora e prossimamente
+  const avail = products.filter(p => p.available && !p.comingSoon);
+  const coming = products.filter(p => p.comingSoon);
+  
+  const inCart = products.filter(p => cart[p.id] > 0);
+  const total  = inCart.reduce((s,p) => s + cart[p.id] * p.price, 0);
+  const count  = Object.values(cart).reduce((a,b) => a + b, 0);
+
+  el.innerHTML = `
+    <div class="notice">
+      <span class="icon">🌱</span>
+      Disponibilità aggiornata ogni settimana. Ordina entro domenica sera.
+    </div>
+    
+    <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem;">🥦 Disponibili questa settimana</h2>
+    <div class="products-grid" role="list" style="margin-bottom: 2.5rem;">
+      ${avail.map(p => `
+        <div class="product-card" role="listitem">
+          <div class="product-emoji" aria-hidden="true">${p.emoji}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-price">€${p.price.toFixed(2)}</div>
+          <div class="product-unit">al ${p.unit}</div>
+          <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
+            <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci">−</button>
+            <span class="qty-num" id="qty-${p.id}" aria-live="polite">${cart[p.id]||0}</span>
+            <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta">+</button>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    ${coming.length > 0 ? `
+      <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem; color: var(--muted);">🚀 In arrivo prossimamente</h2>
+      <div class="products-grid" role="list">
+        ${coming.map(p => `
+          <div class="product-card" role="listitem" style="opacity: 0.75; background: #fcfcf9;">
+            <div class="product-emoji" aria-hidden="true" style="filter: grayscale(20%);">${p.emoji}</div>
+            <div class="product-name" style="color: var(--muted);">${p.name}</div>
+            <div class="product-price" style="color: var(--muted);">Disponibile a breve</div>
+            <div class="product-unit">al ${p.unit}</div>
+            <div style="margin-top: auto; font-size: 0.75rem; color: #856404; background: #fef3cd; padding: 5px; border-radius: var(--radius-sm); text-align: center; font-weight: 500;">
+              ⏳ Non ancora ordinabile
+            </div>
+          </div>`).join('')}
+      </div>
+    ` : ''}
+
+    ${count > 0 ? `
+      <div class="cart-bar" role="complementary" aria-label="Carrello">
+        <div>
+          <div class="cart-total">€${total.toFixed(2)}</div>
+          <div class="cart-count">${count} ${count===1?'prodotto':'prodotti'} selezionati</div>
+        </div>
+        <button class="btn-cart" onclick="goCheckout()">Procedi →</button>
+      </div>` : ''}`;
+}
+  if(view==='checkout'){ renderCheckout(el); return; }
+
   const avail = products.filter(p=>p.available);
   const inCart = products.filter(p=>cart[p.id]>0);
   const total  = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
@@ -978,12 +1035,21 @@ function renderAdmin(){
         </div>
         <div class="admin-products">
           ${products.map(p=>`
-            <div class="admin-prod-card">
-              <div class="product-emoji" style="font-size:1.6rem;margin:0;" aria-hidden="true">${p.emoji}</div>
-              <div class="admin-prod-info">
-                <div class="admin-prod-name">${p.name}</div>
-                <div class="admin-prod-price">€${p.price.toFixed(2)}/${p.unit}</div>
+            <div class="admin-prod-card" style="flex-direction: column; align-items: stretch; gap: .5rem;">
+              <div style="display: flex; align-items: center; gap: .5rem;">
+                <div class="product-emoji" style="font-size:1.5rem;margin:0;" aria-hidden="true">${p.emoji}</div>
+                <div class="admin-prod-info">
+                  <div class="admin-prod-name">${p.name}</div>
+                  <div class="admin-prod-price">€${p.price.toFixed(2)}/${p.unit}</div>
+                </div>
               </div>
+              
+              <select class="status-sel" style="width: 100%; padding: 4px;" onchange="updateProductStatus('${p.id}', this.value)">
+                <option value="disponibile" ${p.available && !p.comingSoon ? 'selected' : ''}>🟢 Disponibile ora</option>
+                <option value="prossimamente" ${p.comingSoon ? 'selected' : ''}>🚀 Prossimamente</option>
+                <option value="nascosto" ${!p.available && !p.comingSoon ? 'selected' : ''}>⚪ Nascondi prodotto</option>
+              </select>
+            </div>
               <div class="toggle-wrap">
                 <button class="toggle ${p.available?'on':'off'}"
                   onclick="toggleProduct(${p.id})"
@@ -1066,6 +1132,23 @@ function toggleProduct(id){
   }
 }
 
+function updateProductStatus(id, status) {
+  let updateData = {};
+  
+  if (status === 'disponibile') {
+    updateData = { available: true, comingSoon: false };
+  } else if (status === 'prossimamente') {
+    updateData = { available: false, comingSoon: true };
+  } else if (status === 'nascosto') {
+    updateData = { available: false, comingSoon: false };
+  }
+  
+  // Aggiorna direttamente Firebase
+  db.collection("products").doc(id.toString()).update(updateData)
+    .then(() => console.log("Stato prodotto aggiornato cloud!"))
+    .catch((e) => console.error("Errore aggiornamento prodotto:", e));
+}
+  
 function updateStatus(id, status){
   db.collection("orders").doc(id).update({ status: status });
 }
