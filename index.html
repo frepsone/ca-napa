@@ -671,8 +671,6 @@ const DEFAULT_PRODUCTS = [
   {id:25, name:'Melone',                          emoji:'🍈', price:3.50, unit:'kg',    available:true},
 ];
 
-function getProducts(){ try{ const s=localStorage.getItem(PROD_KEY); return s?JSON.parse(s):DEFAULT_PRODUCTS; }catch(e){ return DEFAULT_PRODUCTS; } }
-function saveProducts(p){ try{ localStorage.setItem(PROD_KEY,JSON.stringify(p)); }catch(e){} }
   const firebaseConfig = {
   apiKey: "AIzaSyDrb2ATcEYDR_-P9btsM7d7YHKnUl_pa-o",
   authDomain: "ca-napa-orto.firebaseapp.com",
@@ -707,8 +705,8 @@ function setAuth(v){ if(v) sessionStorage.setItem(AUTH_KEY,'1'); else sessionSto
 /* ===== Stato ===== */
 let cart   = {};
 let view   = 'list'; /* list | checkout | success */
-let products = getProducts();
-let orders   = getOrders();
+let products = [];
+let orders   = [];
 
 /* ===== Navigazione tab ===== */
 const IS_ADMIN_MODE = window.location.search.includes('admin');
@@ -920,7 +918,27 @@ function submitOrder(){
   view = 'success';
   renderShop();
 }
-
+db.collection("products").onSnapshot((snapshot) => {
+  if (snapshot.empty) {
+    // Se il database cloud è vuoto, carichiamo la lista di default automaticamente!
+    DEFAULT_PRODUCTS.forEach(p => {
+      db.collection("products").doc(p.id.toString()).set(p);
+    });
+    return;
+  }
+  
+  products = [];
+  snapshot.forEach((doc) => {
+    products.push(doc.data());
+  });
+  
+  // Riordiniamo i prodotti per ID per mantenerli nel giusto ordine
+  products.sort((a,b) => a.id - b.id);
+  
+  // Aggiorniamo lo schermo
+  if (document.getElementById('shop').classList.contains('active')) renderShop();
+  if (document.getElementById('admin') && document.getElementById('admin').classList.contains('active')) renderAdmin();
+});
 function resetShop(){
   cart = {};
   view = 'list';
@@ -1039,9 +1057,12 @@ function logout(){
 }
 
 function toggleProduct(id){
-  products = products.map(p=>p.id===id ? {...p, available:!p.available} : p);
-  saveProducts(products);
-  renderAdmin();
+  // Trova il prodotto cliccato
+  const prod = products.find(p => p.id === id);
+  if(prod) {
+    // Aggiorna solo lo stato 'available' su Firebase invertendolo (true/false)
+    db.collection("products").doc(id.toString()).update({ available: !prod.available });
+  }
 }
 
 function updateStatus(id, status){
@@ -1062,9 +1083,12 @@ function openAddProduct(){
   const price = parseFloat(priceRaw.replace(',','.'));
   if(isNaN(price)){ alert('Prezzo non valido.'); return; }
   const unit = prompt('Unità di misura (es. kg, cespo, mazzo):','kg') || 'kg';
-  products = [...products, {id:Date.now(), name, emoji, price, unit, available:true}];
-  saveProducts(products);
-  renderAdmin();
+  
+  const newId = Date.now(); // Usiamo la data come ID univoco numerico
+  const newProduct = {id: newId, name, emoji, price, unit, available: true};
+  
+  // Salviamo il nuovo prodotto su Firebase
+  db.collection("products").doc(newId.toString()).set(newProduct);
 }
 
 /* ===== Init ===== */
