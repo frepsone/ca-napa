@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   /* === Reset & base === */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -671,8 +673,34 @@ const DEFAULT_PRODUCTS = [
 
 function getProducts(){ try{ const s=localStorage.getItem(PROD_KEY); return s?JSON.parse(s):DEFAULT_PRODUCTS; }catch(e){ return DEFAULT_PRODUCTS; } }
 function saveProducts(p){ try{ localStorage.setItem(PROD_KEY,JSON.stringify(p)); }catch(e){} }
-function getOrders(){ try{ const s=localStorage.getItem(ORDER_KEY); return s?JSON.parse(s):[]; }catch(e){ return []; } }
-function saveOrders(o){ try{ localStorage.setItem(ORDER_KEY,JSON.stringify(o)); }catch(e){} }
+  const firebaseConfig = {
+  apiKey: "AIzaSyDrb2ATcEYDR_-P9btsM7d7YHKnUl_pa-o",
+  authDomain: "ca-napa-orto.firebaseapp.com",
+  projectId: "ca-napa-orto",
+  storageBucket: "ca-napa-orto.firebasestorage.app",
+  messagingSenderId: "5836504228",
+  appId: "1:5836504228:web:32f691786f0b962fb7fa31",
+  measurementId: "G-9L9ZYKEC1F"
+};
+  // Inizializza Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* Sincronizzazione in tempo reale degli ordini */
+db.collection("orders").onSnapshot((snapshot) => {
+  orders = []; // Svuota l'array locale
+  snapshot.forEach((doc) => {
+    orders.push(doc.data());
+  });
+  
+  // Metti gli ordini più recenti in alto
+  orders.sort((a,b) => b.id.localeCompare(a.id)); 
+  
+  // Se sei nella schermata admin, ricaricala per mostrare i nuovi ordini!
+  if(document.getElementById('admin') && document.getElementById('admin').classList.contains('active')){
+    renderAdmin();
+  }
+});
 function isAuth(){ return sessionStorage.getItem(AUTH_KEY)==='1'; }
 function setAuth(v){ if(v) sessionStorage.setItem(AUTH_KEY,'1'); else sessionStorage.removeItem(AUTH_KEY); }
 
@@ -884,8 +912,9 @@ function submitOrder(){
     status:  'nuovo',
   };
   orders = [order, ...orders];
-  saveOrders(orders);
-  sendTelegramNotification(order);
+  db.collection("orders").doc(order.id).set(order)
+  .then(() => console.log("Ordine inviato in cloud!"))
+  .catch((e) => console.error("Errore: ", e));
   cart = {};
   window._delivery = 'ritiro';
   view = 'success';
@@ -1016,16 +1045,12 @@ function toggleProduct(id){
 }
 
 function updateStatus(id, status){
-  orders = orders.map(o=>o.id===id ? {...o, status} : o);
-  saveOrders(orders);
-  renderAdmin();
+  db.collection("orders").doc(id).update({ status: status });
 }
 
 function deleteOrder(id){
   if(!confirm('Eliminare definitivamente questo ordine?')) return;
-  orders = orders.filter(o=>o.id!==id);
-  saveOrders(orders);
-  renderAdmin();
+  db.collection("orders").doc(id).delete();
 }
 
 function openAddProduct(){
