@@ -900,14 +900,14 @@ function renderAdmin(){
                   <div class="admin-prod-name">${p.name}</div>
                   <div class="admin-prod-price">€${p.price.toFixed(2)}/${p.unit}</div>
                   
-                  <div style="font-size: 0.75rem; margin-top: 6px; display: flex; align-items: center; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <label style="color:var(--muted)">Scorte:</label>
-                      <input type="number" min="0" placeholder="∞" value="${p.stock !== undefined ? p.stock : ''}" onchange="updateProductStock('${p.id}', this.value)" style="width: 50px; padding: 3px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 4px;">
+                 <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; margin-top: 8px; margin-bottom: 4px;">
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                      <label style="font-size: 0.7rem; color:var(--muted); font-weight: 500; line-height: 1;">Scorte max</label>
+                      <input type="number" min="0" placeholder="∞" value="${p.stock !== undefined ? p.stock : ''}" onchange="updateProductStock('${p.id}', this.value)" style="width: 100%; padding: 5px 6px; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none;">
                     </div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <label style="color:var(--muted)">Arrivo:</label>
-                      <input type="text" placeholder="es. Fine Agosto" value="${p.expectedDate || ''}" onchange="updateProductExpectedDate('${p.id}', this.value)" style="width: 100px; padding: 3px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                      <label style="font-size: 0.7rem; color:var(--muted); font-weight: 500; line-height: 1;">Arrivo previsto</label>
+                      <input type="text" placeholder="es. Fine Ago" value="${p.expectedDate || ''}" onchange="updateProductExpectedDate('${p.id}', this.value)" style="width: 100%; padding: 5px 6px; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none;">
                     </div>
                   </div>
 
