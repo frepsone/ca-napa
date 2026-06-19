@@ -513,16 +513,22 @@ const firebaseConfig = {
   measurementId: "G-9L9ZYKEC1F"
 };
 
-// Inizializza Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* CAMBIA QUESTA PASSWORD prima di usare il sito! */
 const ADMIN_PASSWORD = 'orto2026';
 
-/* TELEGRAM — inserisci i tuoi dati */
 const TG_TOKEN   = '8817936267:AAHD6L3qpsgz2bN76mWADWJy-G6gUJfNyD8';   
 const TG_CHAT_ID = '-5232331741'; 
+
+/* ========================================================================= */
+/* 1.5 CONFIGURAZIONE ZONE DI CONSEGNA                                       */
+/* ========================================================================= */
+const DELIVERY_ZONES = [
+  { id: 'z1', name: 'Zona 1: Comune e vicinanze (entro 5km)', price: 2.00 },
+  { id: 'z2', name: 'Zona 2: Comuni limitrofi (5-15km)',      price: 5.00 },
+  { id: 'z3', name: 'Zona 3: Fuori zona (oltre 15km)',        price: 10.00 }
+];
 
 /* ========================================================================= */
 /* 2. STATO APP E DATI DI DEFAULT                                            */
@@ -542,7 +548,6 @@ function setAuth(v){ if(v) sessionStorage.setItem(AUTH_KEY,'1'); else sessionSto
 /* 3. SINCRONIZZAZIONE FIREBASE IN TEMPO REALE                               */
 /* ========================================================================= */
 
-// Sincronizza Ordini
 db.collection("orders").onSnapshot((snapshot) => {
   orders = []; 
   snapshot.forEach((doc) => orders.push(doc.data()));
@@ -553,7 +558,6 @@ db.collection("orders").onSnapshot((snapshot) => {
   }
 });
 
-// Sincronizza Prodotti
 db.collection("products").onSnapshot((snapshot) => {
   products = [];
   snapshot.forEach((doc) => products.push(doc.data()));
@@ -570,7 +574,6 @@ db.collection("products").onSnapshot((snapshot) => {
 function renderShop(){
   const el = document.getElementById('shop-content');
   
-  // Schermata di successo
   if(view==='success'){
     el.innerHTML = `
       <div class="success-screen">
@@ -582,10 +585,8 @@ function renderShop(){
     return;
   }
   
-  // Schermata checkout
   if(view==='checkout'){ renderCheckout(el); return; }
 
-  // Filtra i prodotti
   const avail = products.filter(p => p.available && !p.comingSoon);
   const coming = products.filter(p => p.comingSoon);
   
@@ -596,7 +597,7 @@ function renderShop(){
   el.innerHTML = `
     <div class="notice">
       <span class="icon">🌱</span>
-      Disponibilità aggiornata ogni settimana.
+      Disponibilità aggiornata ogni settimana. Ordina entro domenica sera.
     </div>
     
     <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem;">🥦 Disponibili questa settimana</h2>
@@ -656,7 +657,6 @@ function changeQty(id, d){
   
   if(next < 0) next = 0;
   
-  // Controllo scorte massime
   if(p.stock !== undefined && next > p.stock) {
     alert('Hai raggiunto la quantità massima disponibile per questo prodotto!');
     next = p.stock;
@@ -675,8 +675,17 @@ function goCheckout(){
 function renderCheckout(el){
   const inCart = products.filter(p=>cart[p.id]>0);
   const subtotal = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
+  
   const delivery = window._delivery || 'ritiro';
-  const surcharge = delivery === 'consegna' ? 2.00 : 0;
+  let currentZone = null;
+  let surcharge = 0;
+  
+  if(delivery === 'consegna') {
+    const zoneId = window._deliveryZone || DELIVERY_ZONES[0].id;
+    currentZone = DELIVERY_ZONES.find(z => z.id === zoneId);
+    surcharge = currentZone ? currentZone.price : 0;
+  }
+  
   const total = subtotal + surcharge;
 
   el.innerHTML = `
@@ -690,7 +699,7 @@ function renderCheckout(el){
           </div>`).join('')}
         ${delivery === 'consegna' ? `
           <div class="order-line" style="color:var(--muted)">
-            <span>🚚 Contributo consegna</span><span>€2.00</span>
+            <span>🚚 ${currentZone.name}</span><span>€${surcharge.toFixed(2)}</span>
           </div>` : ''}
         <div class="order-total"><span>Totale</span><span>€${total.toFixed(2)}</span></div>
       </div>
@@ -706,10 +715,19 @@ function renderCheckout(el){
           <button class="delivery-opt ${delivery==='consegna'?'selected':''}" onclick="setDelivery('consegna')">
             <div class="opt-icon">🚚</div>
             <div class="opt-label">Consegna a domicilio</div>
-            <div class="opt-sub">+ €2.00</div>
+            <div class="opt-sub">A zone</div>
           </button>
         </div>
+        
         ${delivery === 'consegna' ? `
+          <div class="form-row full">
+            <div class="form-group">
+              <label>Fascia di consegna *</label>
+              <select id="f-zone" onchange="window._deliveryZone=this.value; renderShop()">
+                ${DELIVERY_ZONES.map(z => `<option value="${z.id}" ${currentZone && currentZone.id === z.id ? 'selected' : ''}>${z.name} (+ €${z.price.toFixed(2)})</option>`).join('')}
+              </select>
+            </div>
+          </div>
           <div class="form-row full">
             <div class="form-group">
               <label>Indirizzo di consegna *</label>
@@ -758,14 +776,24 @@ function submitOrder(){
   }
 
   const delivery = window._delivery || 'ritiro';
-  if(delivery === 'consegna' && !document.getElementById('f-address').value.trim()){
-    alert('Inserisci l\'indirizzo di consegna.'); return; 
+  let deliveryCost = 0;
+  let deliveryZoneName = '';
+  let address = 'Ritiro in loco';
+
+  if(delivery === 'consegna'){
+    const addressInput = document.getElementById('f-address').value.trim();
+    if(!addressInput){ alert('Inserisci l\'indirizzo di consegna.'); return; }
+    address = addressInput;
+    
+    const zoneId = window._deliveryZone || DELIVERY_ZONES[0].id;
+    const currentZone = DELIVERY_ZONES.find(z => z.id === zoneId);
+    deliveryCost = currentZone.price;
+    deliveryZoneName = currentZone.name;
   }
 
   const inCart  = products.filter(p=>cart[p.id]>0);
   const subtotal = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
-  const total   = subtotal + (delivery === 'consegna' ? 2 : 0);
-  const address = delivery === 'consegna' ? document.getElementById('f-address').value.trim() : 'Ritiro in loco';
+  const total   = subtotal + deliveryCost;
   const now     = new Date();
   
   const order   = {
@@ -774,19 +802,19 @@ function submitOrder(){
     time:     now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),
     name:     fname + ' ' + lname,
     email:    email,
-    phone:    document.getElementById('f-phone').value.trim(),
+    phone:    phone,
     note:     document.getElementById('f-note').value.trim(),
     delivery: delivery,
+    deliveryZone: deliveryZoneName,
+    deliveryCost: deliveryCost,
     address:  address,
     items:    inCart.map(p=>({name:p.name, emoji:p.emoji, qty:cart[p.id], price:p.price})),
     total:    total,
     status:  'nuovo',
   };
 
-  // Salva ordine su FIREBASE
   db.collection("orders").doc(order.id).set(order)
     .then(() => {
-      // 🌿 SCALA AUTOMATICAMENTE LE SCORTE 🌿
       inCart.forEach(p => {
         if (p.stock !== undefined && p.stock > 0) {
           db.collection("products").doc(p.id.toString()).update({
@@ -812,7 +840,11 @@ function resetShop(){
 
 async function sendTelegramNotification(order){
   const righe = order.items.map(i=>`  ${i.emoji} ${i.name} ×${i.qty} — €${(i.qty*i.price).toFixed(2)}`).join('\n');
-  const modConsegna = order.delivery === 'consegna' ? `🚚 Consegna\n📍 ${order.address}` : `🏡 Ritiro in loco`;
+  
+  const modConsegna = order.delivery === 'consegna' 
+    ? `🚚 Consegna a domicilio\n🗺️ Zona: ${order.deliveryZone} (+€${order.deliveryCost.toFixed(2)})\n📍 ${order.address}` 
+    : `🏡 Ritiro in loco`;
+    
   const testo = `🌿 Nuovo ordine\n\n👤 ${order.name}\n📞 ${order.phone}\n\n${modConsegna}\n\nProdotti:\n${righe}\n\nTotale: €${order.total.toFixed(2)}`;
   
   try {
@@ -866,6 +898,7 @@ function renderAdmin(){
                   <div class="admin-prod-name">${p.name}</div>
                   <div class="admin-prod-price">€${p.price.toFixed(2)}/${p.unit}</div>
                   
+                  <!-- SEZIONE SCORTE MAGAZZINO -->
                   <div style="font-size: 0.75rem; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
                     <label style="color:var(--muted)">Scorte max:</label>
                     <input type="number" min="0" placeholder="∞" value="${p.stock !== undefined ? p.stock : ''}" onchange="updateProductStock('${p.id}', this.value)" style="width: 60px; padding: 3px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 4px;">
@@ -898,7 +931,11 @@ function renderAdmin(){
                     </span>
                   </div>
                   <div class="order-meta-text">${o.date} ${o.time} · ${o.email}${o.phone?' · '+o.phone:''}</div>
-                  <div class="order-meta-text" style="color:var(--earth)">📍 ${o.delivery === 'consegna' ? o.address : 'Ritiro in loco'}</div>
+                  
+                  <div class="order-meta-text" style="color:var(--earth)">
+                    📍 ${o.delivery === 'consegna' ? `${o.address} <br><span style="font-size:0.75rem; opacity:0.8;">(${o.deliveryZone})</span>` : 'Ritiro in loco'}
+                  </div>
+
                   <div class="order-items-text">${o.items.map(i=>i.emoji+' '+i.name+' ×'+i.qty).join(', ')}</div>
                   ${o.note?`<div class="order-note">📝 ${o.note}</div>`:''}
                 </div>
@@ -949,7 +986,6 @@ function updateProductStatus(id, status) {
 }
 
 function updateProductStock(id, stockVal) {
-  // Se il campo viene lasciato vuoto, elimina il limite. Se c'è un numero, lo salva.
   const val = stockVal === '' ? firebase.firestore.FieldValue.delete() : parseInt(stockVal, 10);
   db.collection("products").doc(id.toString()).update({ stock: val });
 }
