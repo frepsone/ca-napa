@@ -329,12 +329,12 @@
     align-items: center;
     justify-content: space-between;
   }
-  .admin-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .admin-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 1rem; }
   .admin-prod-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: .9rem 1rem;
+    padding: 1rem;
     display: flex;
     align-items: center;
     gap: .75rem;
@@ -463,7 +463,7 @@
     .stats-row { grid-template-columns: repeat(3, 1fr); }
     .shop-hero h1 { font-size: 1.4rem; }
     .logo { font-size: 1.1rem; }
-    .admin-products { grid-template-columns: repeat(1, 1fr); }
+    .admin-products { grid-template-columns: repeat(1, 1fr); } /* Modificato per dispositivi mobili */
   }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -530,6 +530,10 @@ const DELIVERY_ZONES = [
   { id: 'z3', name: 'Zona 3: Fuori zona (oltre 15km)',        price: 10.00 }
 ];
 
+/* Nomi utilizzati per la conversione date */
+const monthNames = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+const periodNames = ["", "Inizio", "Metà", "Fine"];
+
 /* ========================================================================= */
 /* 2. STATO APP E DATI DI DEFAULT                                            */
 /* ========================================================================= */
@@ -588,7 +592,19 @@ function renderShop(){
   if(view==='checkout'){ renderCheckout(el); return; }
 
   const avail = products.filter(p => p.available && !p.comingSoon);
+  
+  // Ordinamento automatico per i "Prossimamente"
   const coming = products.filter(p => p.comingSoon);
+  coming.sort((a, b) => {
+    // 99 serve per spingere i prodotti senza data in fondo alla lista
+    const monthA = a.arrMonth || 99; 
+    const monthB = b.arrMonth || 99;
+    if (monthA !== monthB) return monthA - monthB;
+
+    const periodA = a.arrPeriod || 99;
+    const periodB = b.arrPeriod || 99;
+    return periodA - periodB;
+  });
   
   const inCart = products.filter(p => cart[p.id] > 0);
   const total  = inCart.reduce((s,p) => s + cart[p.id] * p.price, 0);
@@ -627,18 +643,27 @@ function renderShop(){
     ${coming.length > 0 ? `
       <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem; color: var(--muted);">🚀 In arrivo prossimamente</h2>
       <div class="products-grid" role="list">
-        ${coming.map(p => `
+        ${coming.map(p => {
+          let arrivalText = 'Disponibile a breve';
+          if (p.arrMonth && p.arrPeriod) {
+              arrivalText = `🗓️ Arrivo: ${periodNames[p.arrPeriod]} ${monthNames[p.arrMonth]}`;
+          } else if (p.arrMonth) {
+              arrivalText = `🗓️ Arrivo: ${monthNames[p.arrMonth]}`;
+          }
+          
+          return `
           <div class="product-card" role="listitem" style="opacity: 0.75; background: #fcfcf9;">
             <div class="product-emoji" aria-hidden="true" style="filter: grayscale(20%);">${p.emoji}</div>
             <div class="product-name" style="color: var(--muted);">${p.name}</div>
             <div class="product-price" style="color: var(--earth); font-weight: 600;">
-              ${p.expectedDate ? `🗓️ Arrivo: ${p.expectedDate}` : 'Disponibile a breve'}
+              ${arrivalText}
             </div>
             <div class="product-unit">al ${p.unit}</div>
             <div style="margin-top: auto; font-size: 0.75rem; color: #856404; background: #fef3cd; padding: 5px; border-radius: var(--radius-sm); text-align: center; font-weight: 500;">
               ⏳ Non ancora ordinabile
             </div>
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>
     ` : ''}
 
@@ -900,21 +925,40 @@ function renderAdmin(){
                   <div class="admin-prod-name">${p.name}</div>
                   <div class="admin-prod-price">€${p.price.toFixed(2)}/${p.unit}</div>
                   
-                 <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; margin-top: 8px; margin-bottom: 4px;">
-                    <div style="display: flex; flex-direction: column; gap: 3px;">
-                      <label style="font-size: 0.7rem; color:var(--muted); font-weight: 500; line-height: 1;">Scorte max</label>
-                      <input type="number" min="0" placeholder="∞" value="${p.stock !== undefined ? p.stock : ''}" onchange="updateProductStock('${p.id}', this.value)" style="width: 100%; padding: 5px 6px; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none;">
+                  <!-- Layout a due colonne (Scorte | Arrivo) -->
+                  <div style="display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 10px; margin-top: 10px; margin-bottom: 4px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 0.75rem; color:var(--muted); font-weight: 500; line-height: 1;">Scorte max</label>
+                      <input type="number" min="0" placeholder="∞" value="${p.stock !== undefined ? p.stock : ''}" onchange="updateProductStock('${p.id}', this.value)" style="width: 100%; padding: 6px 8px; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none; background: var(--cream);">
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 3px;">
-                      <label style="font-size: 0.7rem; color:var(--muted); font-weight: 500; line-height: 1;">Arrivo previsto</label>
-                      <input type="text" placeholder="es. Fine Ago" value="${p.expectedDate || ''}" onchange="updateProductExpectedDate('${p.id}', this.value)" style="width: 100%; padding: 5px 6px; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none;">
+                    
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 0.75rem; color:var(--muted); font-weight: 500; line-height: 1;">Arrivo previsto</label>
+                      <div style="display: flex; gap: 4px;">
+                        <select onchange="updateProductArrival('${p.id}', 'period', this.value)" style="width: 50%; padding: 5px 2px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--cream); outline: none;">
+                          <option value="">Fase</option>
+                          <option value="1" ${p.arrPeriod == 1 ? 'selected' : ''}>Inizio</option>
+                          <option value="2" ${p.arrPeriod == 2 ? 'selected' : ''}>Metà</option>
+                          <option value="3" ${p.arrPeriod == 3 ? 'selected' : ''}>Fine</option>
+                        </select>
+                        <select onchange="updateProductArrival('${p.id}', 'month', this.value)" style="width: 50%; padding: 5px 2px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--cream); outline: none;">
+                          <option value="">Mese</option>
+                          <option value="5" ${p.arrMonth == 5 ? 'selected' : ''}>Mag</option>
+                          <option value="6" ${p.arrMonth == 6 ? 'selected' : ''}>Giu</option>
+                          <option value="7" ${p.arrMonth == 7 ? 'selected' : ''}>Lug</option>
+                          <option value="8" ${p.arrMonth == 8 ? 'selected' : ''}>Ago</option>
+                          <option value="9" ${p.arrMonth == 9 ? 'selected' : ''}>Set</option>
+                          <option value="10" ${p.arrMonth == 10 ? 'selected' : ''}>Ott</option>
+                          <option value="11" ${p.arrMonth == 11 ? 'selected' : ''}>Nov</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
                 </div>
               </div>
               
-              <select class="status-sel" style="width: 100%; padding: 4px;" onchange="updateProductStatus('${p.id}', this.value)">
+              <select class="status-sel" style="width: 100%; padding: 6px; margin-top: 4px;" onchange="updateProductStatus('${p.id}', this.value)">
                 <option value="disponibile" ${p.available && !p.comingSoon ? 'selected' : ''}>🟢 Disponibile ora</option>
                 <option value="prossimamente" ${p.comingSoon ? 'selected' : ''}>🚀 Prossimamente</option>
                 <option value="nascosto" ${!p.available && !p.comingSoon ? 'selected' : ''}>⚪ Nascondi</option>
@@ -997,9 +1041,12 @@ function updateProductStock(id, stockVal) {
   db.collection("products").doc(id.toString()).update({ stock: val });
 }
 
-function updateProductExpectedDate(id, dateStr) {
-  const val = dateStr.trim() === '' ? firebase.firestore.FieldValue.delete() : dateStr.trim();
-  db.collection("products").doc(id.toString()).update({ expectedDate: val });
+function updateProductArrival(id, field, value) {
+  const val = value === '' ? firebase.firestore.FieldValue.delete() : parseInt(value, 10);
+  const updateData = {};
+  if (field === 'period') updateData.arrPeriod = val;
+  if (field === 'month') updateData.arrMonth = val;
+  db.collection("products").doc(id.toString()).update(updateData);
 }
 
 function openAddProduct(){
