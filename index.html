@@ -3,21 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cà Napà Orticoltura</title>
+<title>Cà Napà Orticoltura — Ordina gli ortaggi freschi</title>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 <style>
-  body { font-family: sans-serif; background: #FAFAF7; color: #1A1A18; }
-  .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-  .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-  .product-card { background: white; border: 1px solid #E0DFD6; padding: 15px; border-radius: 12px; }
-  .qty-ctrl { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  /* Stili ripristinati per mantenere la grafica originale */
+  body { font-family: sans-serif; background: #FAFAF7; color: #1A1A18; margin: 0; }
+  .container { max-width: 860px; margin: 0 auto; padding: 20px; }
+  .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+  .product-card { background: white; border: 1px solid #E0DFD6; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; }
+  .qty-ctrl { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .modal-box { background: white; padding: 20px; border-radius: 12px; max-width: 400px; width: 90%; }
 </style>
 </head>
 <body>
-<div class="container" id="shop-content">
-  <p>Caricamento in corso...</p>
-</div>
+<div class="container" id="shop-content"></div>
+<div id="product-modal-root"></div>
 
 <script>
 const firebaseConfig = {
@@ -43,21 +45,22 @@ db.collection("products").onSnapshot((snapshot) => {
 
 function renderShop() {
   const el = document.getElementById('shop-content');
-  const avail = products.filter(p => p.available && !p.comingSoon);
-  
   el.innerHTML = `
     <h2>🥦 Prodotti disponibili</h2>
     <div class="products-grid">
-      ${avail.map(p => `
+      ${products.filter(p => p.available).map(p => `
         <div class="product-card">
-          <h3>${p.emoji} ${p.name}</h3>
+          <div onclick="openProductInfo(${p.id})" style="cursor:pointer">
+            ${p.img ? `<img src="${p.img}" style="width:100%; height:120px; object-fit:cover; border-radius:8px;">` : `<div style="font-size:40px">${p.emoji}</div>`}
+            <h3>${p.name}</h3>
+          </div>
           <p>€${p.price.toFixed(2)} / ${p.unit}</p>
           <div class="qty-ctrl">
             <button onclick="changeQty(${p.id}, -1)">-</button>
             <span>${cart[p.id] || 0}</span>
             <button onclick="changeQty(${p.id}, 1)">+</button>
           </div>
-          ${p.stock !== undefined ? `<p style="font-size:12px">Disponibili: ${p.stock}</p>` : ''}
+          ${p.stock !== undefined ? `<p style="font-size:12px; margin-top:5px;">Disponibili: ${p.stock}</p>` : ''}
         </div>
       `).join('')}
     </div>
@@ -75,6 +78,21 @@ function changeQty(id, d) {
   cart[id] = next;
   renderShop();
 }
+
+function openProductInfo(id) {
+  const p = products.find(pr => pr.id === id);
+  document.getElementById('product-modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="closeModal()">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <h3>${p.name}</h3>
+        <p>${p.description || 'Nessuna descrizione.'}</p>
+        <button onclick="closeModal()">Chiudi</button>
+      </div>
+    </div>
+  `;
+}
+
+function closeModal() { document.getElementById('product-modal-root').innerHTML = ''; }
 </script>
 </body>
 </html>
