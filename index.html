@@ -485,12 +485,12 @@
     align-items: center;
     justify-content: space-between;
   }
-  .admin-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .admin-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 1rem; }
   .admin-prod-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: .9rem 1rem;
+    padding: .75rem .8rem;
     display: flex;
     align-items: center;
     gap: .75rem;
@@ -499,28 +499,32 @@
   .admin-prod-name { font-size: .875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .admin-prod-price { font-size: .78rem; color: var(--muted); }
   .btn-edit-info {
-    font-size: .76rem;
-    padding: 4px 8px;
+    font-size: .74rem;
+    padding: 5px 6px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--cream);
     color: var(--muted);
     cursor: pointer;
     width: 100%;
+    margin-top: 2px;
   }
   .btn-edit-info:hover { border-color: var(--green); color: var(--green); background: var(--green-lt); }
   .stock-input-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-  .stock-input-row label { font-size: .76rem; color: var(--muted); white-space: nowrap; }
+  .stock-input-row label { font-size: .73rem; color: var(--muted); white-space: nowrap; }
   .stock-input-row input {
-    width: 80px;
-    padding: 4px 8px;
+    width: 68px;
+    padding: 3px 6px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--cream);
-    font-size: .82rem;
+    font-size: .78rem;
     text-align: right;
   }
-  .avail-input-row { display: flex; flex-direction: column; gap: 4px; }
+  .avail-input-row { display: flex; align-items: center; gap: 6px; }
+  .avail-input-row label { font-size: .73rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .avail-input-row .avail-selects { display: flex; gap: 4px; flex: 1; min-width: 0; }
+  .avail-input-row select { min-width: 0; }
 
   .btn-add {
     padding: .55rem 1rem;
@@ -1271,9 +1275,9 @@ function renderAdmin(){
         </div>
         <div class="admin-products">
           ${products.map(p=>`
-            <div class="admin-prod-card" style="flex-direction: column; align-items: stretch; gap: .5rem;">
+            <div class="admin-prod-card" style="flex-direction: column; align-items: stretch; gap: .4rem;">
               <div style="display: flex; align-items: center; gap: .5rem;">
-                <div class="product-emoji" style="font-size:1.5rem;margin:0;" aria-hidden="true">${p.emoji}</div>
+                <div class="product-emoji" style="font-size:1.4rem;margin:0;" aria-hidden="true">${p.emoji}</div>
                 <div class="admin-prod-info">
                   <div class="admin-prod-name">${p.name}</div>
                   <div class="admin-prod-price">€${p.price.toFixed(2)}/${p.unit}</div>
@@ -1286,28 +1290,29 @@ function renderAdmin(){
                 <option value="nascosto" ${!p.available && !p.comingSoon ? 'selected' : ''}>⚪ Nascondi</option>
               </select>
               <div class="stock-input-row">
-                <label for="stock-${p.id}">Stock disponibile</label>
+                <label for="stock-${p.id}">Stock</label>
                 <input id="stock-${p.id}" type="number" min="0" step="1"
                   value="${p.stock !== null && p.stock !== undefined ? p.stock : ''}"
                   placeholder="illimitato"
                   onchange="updateProductStock('${p.id}', this.value)">
               </div>
+              ${p.comingSoon ? `
               <div class="avail-input-row">
-                <label style="font-size:.76rem;color:var(--muted);">Disponibile da:</label>
-                <div style="display:flex;gap:6px;">
-                  <select class="status-sel" style="flex:1;padding:4px;" onchange="updateProductAvailability('${p.id}', 'availPeriod', this.value)">
+                <label>Da:</label>
+                <div class="avail-selects">
+                  <select class="status-sel" onchange="updateProductAvailability('${p.id}', 'availPeriod', this.value)">
                     <option value="">—</option>
-                    <option value="inizio" ${p.availPeriod==='inizio'?'selected':''}>Inizio mese</option>
-                    <option value="meta" ${p.availPeriod==='meta'?'selected':''}>Metà mese</option>
-                    <option value="fine" ${p.availPeriod==='fine'?'selected':''}>Fine mese</option>
+                    <option value="inizio" ${p.availPeriod==='inizio'?'selected':''}>Inizio</option>
+                    <option value="meta" ${p.availPeriod==='meta'?'selected':''}>Metà</option>
+                    <option value="fine" ${p.availPeriod==='fine'?'selected':''}>Fine</option>
                   </select>
-                  <select class="status-sel" style="flex:1;padding:4px;" onchange="updateProductAvailability('${p.id}', 'availMonth', this.value)">
+                  <select class="status-sel" onchange="updateProductAvailability('${p.id}', 'availMonth', this.value)">
                     <option value="">—</option>
                     ${MONTH_NAMES.map((m,i) => `<option value="${i+1}" ${p.availMonth==(i+1)?'selected':''}>${m}</option>`).join('')}
                   </select>
                 </div>
-              </div>
-              <button class="btn-edit-info" onclick="openEditInfo('${p.id}')">✏️ Modifica scheda prodotto</button>
+              </div>` : ''}
+              <button class="btn-edit-info" onclick="openEditInfo('${p.id}')">✏️ Modifica scheda</button>
             </div>`).join('')}
         </div>
       </div>
