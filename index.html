@@ -860,10 +860,16 @@ function renderShop(){
     <div class="products-grid" role="list" style="margin-bottom: 2.5rem;">
       ${avail.map(p => `
         <div class="product-card" role="listitem">
-          <div class="card-top">
-            <div class="product-emoji" aria-hidden="true">${p.img ? `<img src="${p.img}" alt="${p.name}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">` : p.emoji}</div>
-            <button class="info-btn" onclick="openProductInfo(${p.id})" aria-label="Informazioni su ${p.name}">i</button>
-          </div>
+          ${p.img 
+            ? `<div onclick="openProductInfo(${p.id})" style="width: 100%; height: 160px; margin-bottom: 12px; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;">
+                 <img src="${p.img}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: cover;">
+                 <button class="info-btn" aria-label="Informazioni su ${p.name}" style="position: absolute; top: 8px; right: 8px; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">i</button>
+               </div>`
+            : `<div class="card-top" onclick="openProductInfo(${p.id})" style="cursor: pointer;">
+                 <div class="product-emoji" aria-hidden="true">${p.emoji}</div>
+                 <button class="info-btn" aria-label="Informazioni su ${p.name}">i</button>
+               </div>`
+          }
           <div class="product-name product-name-clickable" onclick="openProductInfo(${p.id})">${p.name}</div>
           <div class="product-price">€${p.price.toFixed(2)}</div>
           <div class="product-unit">al ${p.unit}</div>
