@@ -827,7 +827,6 @@ db.collection("products").onSnapshot((snapshot) => {
 function renderShop(){
   const el = document.getElementById('shop-content');
   
-  // Schermata di successo
   if(view==='success'){
     el.innerHTML = `
       <div class="success-screen">
@@ -839,12 +838,21 @@ function renderShop(){
     return;
   }
   
-  // Schermata checkout
   if(view==='checkout'){ renderCheckout(el); return; }
 
-  // Filtra i prodotti
   const avail = products.filter(p => p.available && !p.comingSoon);
+  
+  // Ordinamento automatico per i "Prossimamente"
   const coming = products.filter(p => p.comingSoon);
+  coming.sort((a, b) => {
+    const monthA = a.arrMonth || 99; 
+    const monthB = b.arrMonth || 99;
+    if (monthA !== monthB) return monthA - monthB;
+
+    const periodA = a.arrPeriod || 99;
+    const periodB = b.arrPeriod || 99;
+    return periodA - periodB;
+  });
   
   const inCart = products.filter(p => cart[p.id] > 0);
   const total  = inCart.reduce((s,p) => s + cart[p.id] * p.price, 0);
@@ -853,7 +861,7 @@ function renderShop(){
   el.innerHTML = `
     <div class="notice">
       <span class="icon">🌱</span>
-      Guarda le foto, le ricette e le informazioni dei tuoi prodotti preferiti! Clicca sul nome oppure sulla <i>i</i>
+      Disponibilità aggiornata ogni settimana. Ordina entro domenica sera.
     </div>
     
     <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem;">🥦 Disponibili questa settimana</h2>
@@ -888,21 +896,31 @@ function renderShop(){
           }
         </div>`).join('')}
     </div>
-    </div>
 
     ${coming.length > 0 ? `
       <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem; color: var(--muted);">🚀 In arrivo prossimamente</h2>
       <div class="products-grid" role="list">
-        ${coming.map(p => `
+        ${coming.map(p => {
+          let arrivalText = 'Disponibile a breve';
+          if (p.arrMonth && p.arrPeriod) {
+              arrivalText = \`🗓️ Arrivo: \${periodNames[p.arrPeriod]} \${monthNames[p.arrMonth]}\`;
+          } else if (p.arrMonth) {
+              arrivalText = \`🗓️ Arrivo: \${monthNames[p.arrMonth]}\`;
+          }
+          
+          return \`
           <div class="product-card" role="listitem" style="opacity: 0.75; background: #fcfcf9;">
-            <div class="product-emoji" aria-hidden="true" style="filter: grayscale(20%);">${p.emoji}</div>
-            <div class="product-name" style="color: var(--muted);">${p.name}</div>
-            <div class="product-price" style="color: var(--muted);">Disponibile a breve</div>
-            <div class="product-unit">al ${p.unit}</div>
+            <div class="product-emoji" aria-hidden="true" style="filter: grayscale(20%);">\${p.emoji}</div>
+            <div class="product-name" style="color: var(--muted);">\${p.name}</div>
+            <div class="product-price" style="color: var(--earth); font-weight: 600;">
+              \${arrivalText}
+            </div>
+            <div class="product-unit">al \${p.unit}</div>
             <div style="margin-top: auto; font-size: 0.75rem; color: #856404; background: #fef3cd; padding: 5px; border-radius: var(--radius-sm); text-align: center; font-weight: 500;">
               ⏳ Non ancora ordinabile
             </div>
-          </div>`).join('')}
+          </div>\`;
+        }).join('')}
       </div>
     ` : ''}
 
@@ -913,7 +931,8 @@ function renderShop(){
           <div class="cart-count">${count} ${count===1?'prodotto':'prodotti'} selezionati</div>
         </div>
         <button class="btn-cart" onclick="goCheckout()">Procedi →</button>
-      </div>` : ''}`;
+      </div>` : ''}
+  `;
 }
 
 function changeQty(id, d){
