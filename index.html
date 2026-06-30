@@ -902,8 +902,19 @@ function renderShop(){
 }
 
 function changeQty(id, d){
-  cart[id] = (cart[id]||0) + d;
-  if(cart[id] < 0) cart[id] = 0;
+  const p = products.find(prod => prod.id === id);
+  let current = cart[id] || 0;
+  let next = current + d;
+  
+  if(next < 0) next = 0;
+  
+  // Controllo scorte massime
+  if(p.stock !== undefined && next > p.stock) {
+    alert('Hai raggiunto la quantità massima disponibile per questo prodotto!');
+    next = p.stock;
+  }
+  
+  cart[id] = next;
   renderShop();
 }
 
