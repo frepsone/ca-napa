@@ -853,7 +853,7 @@ function renderShop(){
   el.innerHTML = `
     <div class="notice">
       <span class="icon">🌱</span>
-      Da oggi informazioni, foto e ricette dei tuoi prodotti preferiti! Clicca sul nome o sulla<i>i</i>
+      Disponibilità aggiornata ogni settimana. Ordina entro domenica sera.
     </div>
     
     <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem;">🥦 Disponibili questa settimana</h2>
@@ -1141,7 +1141,6 @@ function renderAdmin(){
         <div class="section-title">
           <span>🥦 Gestione Catalogo</span>
           <div style="display:flex;gap:8px;">
-            <button class="btn-add" onclick="syncProductInfo()">🔄 Aggiorna schede prodotto</button>
             <button class="btn-add" onclick="openAddProduct()">+ Aggiungi</button>
           </div>
         </div>
@@ -1297,26 +1296,6 @@ function saveProductInfo(id){
     recipe3Name, recipe3Url
   }).then(() => closeProductInfo())
     .catch(e => alert("Errore durante il salvataggio: " + e));
-}
-
-function syncProductInfo(){
-  if(!confirm('Questo aggiornerà descrizione, ricette e immagine di tutti i prodotti con i testi predefiniti, lasciando invariati nome, prezzo e disponibilità. Eventuali schede già modificate a mano verranno sovrascritte. Continuare?')) return;
-
-  const batchUpdates = DEFAULT_PRODUCTS.map(dp => {
-    const exists = products.some(p => p.id.toString() === dp.id.toString());
-    if(!exists) return Promise.resolve();
-    return db.collection("products").doc(dp.id.toString()).update({
-      img: dp.img || '',
-      description: dp.description || '',
-      recipe1Name: dp.recipe1Name || '', recipe1Url: dp.recipe1Url || '',
-      recipe2Name: dp.recipe2Name || '', recipe2Url: dp.recipe2Url || '',
-      recipe3Name: dp.recipe3Name || '', recipe3Url: dp.recipe3Url || '',
-    });
-  });
-
-  Promise.all(batchUpdates)
-    .then(() => alert('Schede prodotto aggiornate con successo!'))
-    .catch(e => alert('Errore durante l\'aggiornamento: ' + e));
 }
 
 function openAddProduct(){
