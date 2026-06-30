@@ -207,6 +207,20 @@
   .qty-btn:disabled { opacity: .35; cursor: not-allowed; }
   .qty-btn:disabled:hover { background: var(--cream); border-color: var(--border); }
   .max-qty-note { font-size: .72rem; color: var(--muted); margin-top: 4px; text-align: center; }
+  .product-card.sold-out .product-card-body { opacity: .55; }
+  .sold-out-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(192,57,43,.92);
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 4px 0;
+    letter-spacing: .02em;
+  }
 
   /* === Product modal === */
   .modal-overlay {
@@ -495,6 +509,17 @@
     width: 100%;
   }
   .btn-edit-info:hover { border-color: var(--green); color: var(--green); background: var(--green-lt); }
+  .stock-input-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .stock-input-row label { font-size: .76rem; color: var(--muted); white-space: nowrap; }
+  .stock-input-row input {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--cream);
+    font-size: .82rem;
+    text-align: right;
+  }
 
   .btn-add {
     padding: .55rem 1rem;
@@ -885,26 +910,36 @@ function renderShop(){
     <div class="products-grid" role="list" style="margin-bottom: 2.5rem;">
       ${avail.map(p => {
         const max = p.maxQty && p.maxQty > 0 ? p.maxQty : null;
+        const stock = (p.stock !== null && p.stock !== undefined) ? p.stock : null;
+        const soldOut = stock !== null && stock <= 0;
+        const effectiveMax = [max, stock].filter(v => v !== null).length
+          ? Math.min(...[max, stock].filter(v => v !== null))
+          : null;
         const current = cart[p.id] || 0;
-        const atMax = max !== null && current >= max;
+        const atMax = effectiveMax !== null && current >= effectiveMax;
         return `
-        <div class="product-card" role="listitem">
-          <div class="product-photo-wrap">
+        <div class="product-card ${soldOut ? 'sold-out' : ''}" role="listitem">
+          <div class="product-photo-wrap" onclick="openProductInfo(${p.id})" style="cursor:pointer;">
             ${p.img
               ? `<img src="${p.img}" alt="${p.name}" loading="lazy">`
               : `<span class="product-emoji-only" aria-hidden="true">${p.emoji}</span>`}
-            <button class="info-btn info-btn-floating" onclick="openProductInfo(${p.id})" aria-label="Informazioni su ${p.name}">i</button>
+            ${soldOut ? `<div class="sold-out-badge">Esaurito</div>` : ''}
+            <button class="info-btn info-btn-floating" onclick="event.stopPropagation();openProductInfo(${p.id})" aria-label="Informazioni su ${p.name}">i</button>
           </div>
           <div class="product-card-body">
             <div class="product-name product-name-clickable" onclick="openProductInfo(${p.id})">${p.name}</div>
             <div class="product-price">€${p.price.toFixed(2)}</div>
             <div class="product-unit">al ${p.unit}</div>
             <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
-              <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci">−</button>
+              <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci" ${soldOut ? 'disabled' : ''}>−</button>
               <span class="qty-num" id="qty-${p.id}" aria-live="polite">${current}</span>
-              <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta" ${atMax ? 'disabled' : ''}>+</button>
+              <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta" ${(atMax || soldOut) ? 'disabled' : ''}>+</button>
             </div>
-            ${max !== null ? `<div class="max-qty-note">${atMax ? `Massimo ${max} raggiunto` : `Max ${max} a ordine`}</div>` : ''}
+            ${soldOut
+              ? `<div class="max-qty-note" style="color:#A32D2D;">Esaurito per questa settimana</div>`
+              : stock !== null
+                ? `<div class="max-qty-note">${atMax ? `Solo ${stock} rimasti` : `${stock} disponibili${max !== null ? ` · max ${max} a ordine` : ''}`}</div>`
+                : (max !== null ? `<div class="max-qty-note">${atMax ? `Massimo ${max} raggiunto` : `Max ${max} a ordine`}</div>` : '')}
           </div>
         </div>`;
       }).join('')}
@@ -944,10 +979,14 @@ function renderShop(){
 
 function changeQty(id, d){
   const p = products.find(pr => pr.id === id);
-  const max = p && p.maxQty && p.maxQty > 0 ? p.maxQty : null;
+  if(!p) return;
+  const max = p.maxQty && p.maxQty > 0 ? p.maxQty : null;
+  const stock = (p.stock !== null && p.stock !== undefined) ? p.stock : null;
+  const caps = [max, stock].filter(v => v !== null);
+  const cap = caps.length ? Math.min(...caps) : null;
   let next = (cart[id]||0) + d;
   if(next < 0) next = 0;
-  if(max !== null && next > max) next = max;
+  if(cap !== null && next > cap) next = cap;
   cart[id] = next;
   renderShop();
 }
@@ -1122,8 +1161,33 @@ function submitOrder(){
     status:  'nuovo',
   };
 
-  // Salva ordine su FIREBASE
-  db.collection("orders").doc(order.id).set(order)
+  // Verifica e scala lo stock in modo sicuro (transazione), poi salva l'ordine
+  const stockItems = inCart.filter(p => p.stock !== null && p.stock !== undefined);
+
+  const runTransaction = stockItems.length
+    ? db.runTransaction(async (tx) => {
+        const refs = stockItems.map(p => db.collection("products").doc(p.id.toString()));
+        const snaps = await Promise.all(refs.map(ref => tx.get(ref)));
+        for(let i = 0; i < stockItems.length; i++){
+          const p = stockItems[i];
+          const currentStock = snaps[i].exists ? (snaps[i].data().stock ?? null) : null;
+          const requested = cart[p.id];
+          if(currentStock !== null && requested > currentStock){
+            throw new Error(`Disponibili solo ${currentStock} ${p.unit} di ${p.name}. Aggiorna la quantità nel carrello.`);
+          }
+        }
+        snaps.forEach((snap, i) => {
+          const p = stockItems[i];
+          const currentStock = snap.exists ? (snap.data().stock ?? null) : null;
+          if(currentStock !== null){
+            tx.update(refs[i], { stock: Math.max(0, currentStock - cart[p.id]) });
+          }
+        });
+      })
+    : Promise.resolve();
+
+  runTransaction
+    .then(() => db.collection("orders").doc(order.id).set(order))
     .then(() => {
       sendTelegramNotification(order);
       cart = {};
@@ -1131,7 +1195,7 @@ function submitOrder(){
       view = 'success';
       renderShop();
     })
-    .catch((e) => alert("Errore durante l'invio: " + e));
+    .catch((e) => alert(e.message || ("Errore durante l'invio: " + e)));
 }
 
 function resetShop(){
@@ -1205,6 +1269,13 @@ function renderAdmin(){
                 <option value="prossimamente" ${p.comingSoon ? 'selected' : ''}>🚀 Prossimamente</option>
                 <option value="nascosto" ${!p.available && !p.comingSoon ? 'selected' : ''}>⚪ Nascondi</option>
               </select>
+              <div class="stock-input-row">
+                <label for="stock-${p.id}">Stock disponibile</label>
+                <input id="stock-${p.id}" type="number" min="0" step="1"
+                  value="${p.stock !== null && p.stock !== undefined ? p.stock : ''}"
+                  placeholder="illimitato"
+                  onchange="updateProductStock('${p.id}', this.value)">
+              </div>
               <button class="btn-edit-info" onclick="openEditInfo('${p.id}')">✏️ Modifica scheda prodotto</button>
             </div>`).join('')}
         </div>
@@ -1273,6 +1344,12 @@ function updateProductStatus(id, status) {
   else if (status === 'nascosto') { updateData = { available: false, comingSoon: false }; }
   
   db.collection("products").doc(id.toString()).update(updateData);
+}
+
+function updateProductStock(id, rawValue){
+  const trimmed = rawValue.trim();
+  const stock = trimmed === '' ? null : Math.max(0, parseInt(trimmed, 10) || 0);
+  db.collection("products").doc(id.toString()).update({ stock: stock });
 }
 
 function openEditInfo(id){
@@ -1360,7 +1437,7 @@ function openAddProduct(){
   const unit = prompt('Unità (es. kg, pezzo):','kg') || 'kg';
   
   const newId = Date.now();
-  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false, img: '', maxQty: null, description: '', recipe1Name: '', recipe1Url: '', recipe2Name: '', recipe2Url: '', recipe3Name: '', recipe3Url: ''});
+  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false, img: '', maxQty: null, stock: null, description: '', recipe1Name: '', recipe1Url: '', recipe2Name: '', recipe2Url: '', recipe3Name: '', recipe3Url: ''});
 }
 
 function updateStatus(id, status){ db.collection("orders").doc(id).update({ status: status }); }
