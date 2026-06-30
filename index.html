@@ -520,6 +520,7 @@
     font-size: .82rem;
     text-align: right;
   }
+  .avail-input-row { display: flex; flex-direction: column; gap: 4px; }
 
   .btn-add {
     padding: .55rem 1rem;
@@ -957,7 +958,7 @@ function renderShop(){
             </div>
             <div class="product-card-body">
               <div class="product-name" style="color: var(--muted);">${p.name}</div>
-              <div class="product-price" style="color: var(--muted);">Disponibile a breve</div>
+              <div class="product-price" style="color: var(--muted);">${formatAvailability(p)}</div>
               <div class="product-unit">al ${p.unit}</div>
               <div style="margin-top: auto; font-size: 0.75rem; color: #856404; background: #fef3cd; padding: 5px; border-radius: var(--radius-sm); text-align: center; font-weight: 500;">
                 ⏳ Non ancora ordinabile
@@ -975,6 +976,21 @@ function renderShop(){
         </div>
         <button class="btn-cart" onclick="goCheckout()">Procedi →</button>
       </div>` : ''}`;
+}
+
+const MONTH_NAMES = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const PERIOD_LABELS = { inizio: 'inizio', meta: 'metà', fine: 'fine' };
+
+function formatAvailability(p){
+  if(p.availMonth && p.availPeriod){
+    const monthName = MONTH_NAMES[parseInt(p.availMonth, 10) - 1];
+    const periodLabel = PERIOD_LABELS[p.availPeriod] || '';
+    return `Disponibile da ${periodLabel} ${monthName}`;
+  }
+  if(p.availMonth){
+    return `Disponibile da ${MONTH_NAMES[parseInt(p.availMonth, 10) - 1]}`;
+  }
+  return 'Disponibile a breve';
 }
 
 function changeQty(id, d){
@@ -1276,6 +1292,21 @@ function renderAdmin(){
                   placeholder="illimitato"
                   onchange="updateProductStock('${p.id}', this.value)">
               </div>
+              <div class="avail-input-row">
+                <label style="font-size:.76rem;color:var(--muted);">Disponibile da:</label>
+                <div style="display:flex;gap:6px;">
+                  <select class="status-sel" style="flex:1;padding:4px;" onchange="updateProductAvailability('${p.id}', 'availPeriod', this.value)">
+                    <option value="">—</option>
+                    <option value="inizio" ${p.availPeriod==='inizio'?'selected':''}>Inizio mese</option>
+                    <option value="meta" ${p.availPeriod==='meta'?'selected':''}>Metà mese</option>
+                    <option value="fine" ${p.availPeriod==='fine'?'selected':''}>Fine mese</option>
+                  </select>
+                  <select class="status-sel" style="flex:1;padding:4px;" onchange="updateProductAvailability('${p.id}', 'availMonth', this.value)">
+                    <option value="">—</option>
+                    ${MONTH_NAMES.map((m,i) => `<option value="${i+1}" ${p.availMonth==(i+1)?'selected':''}>${m}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
               <button class="btn-edit-info" onclick="openEditInfo('${p.id}')">✏️ Modifica scheda prodotto</button>
             </div>`).join('')}
         </div>
@@ -1350,6 +1381,12 @@ function updateProductStock(id, rawValue){
   const trimmed = rawValue.trim();
   const stock = trimmed === '' ? null : Math.max(0, parseInt(trimmed, 10) || 0);
   db.collection("products").doc(id.toString()).update({ stock: stock });
+}
+
+function updateProductAvailability(id, field, value){
+  const updateData = {};
+  updateData[field] = value === '' ? null : (field === 'availMonth' ? parseInt(value, 10) : value);
+  db.collection("products").doc(id.toString()).update(updateData);
 }
 
 function openEditInfo(id){
@@ -1437,7 +1474,7 @@ function openAddProduct(){
   const unit = prompt('Unità (es. kg, pezzo):','kg') || 'kg';
   
   const newId = Date.now();
-  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false, img: '', maxQty: null, stock: null, description: '', recipe1Name: '', recipe1Url: '', recipe2Name: '', recipe2Url: '', recipe3Name: '', recipe3Url: ''});
+  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false, img: '', maxQty: null, stock: null, availMonth: null, availPeriod: null, description: '', recipe1Name: '', recipe1Url: '', recipe2Name: '', recipe2Url: '', recipe3Name: '', recipe3Url: ''});
 }
 
 function updateStatus(id, status){ db.collection("orders").doc(id).update({ status: status }); }
