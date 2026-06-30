@@ -160,6 +160,105 @@
     text-align: center;
   }
 
+  /* === Info button on product card === */
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .info-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 600;
+    font-family: 'Lora', serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .12s;
+  }
+  .info-btn:hover { background: var(--green); color: #fff; border-color: var(--green); }
+
+  /* === Product modal === */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,26,24,.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1000;
+    animation: fadeIn .15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    max-width: 440px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    animation: modalUp .2s ease;
+  }
+  @keyframes modalUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-img-wrap {
+    width: 100%;
+    height: 220px;
+    background: var(--green-lt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow: hidden;
+  }
+  .modal-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .modal-img-wrap .modal-emoji-fallback { font-size: 5rem; }
+  .modal-close {
+    position: absolute;
+    top: .75rem;
+    right: .75rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,.9);
+    color: var(--ink);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  .modal-close:hover { background: #fff; }
+  .modal-body { padding: 1.4rem 1.5rem 1.6rem; }
+  .modal-title {
+    font-family: 'Lora', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: .2rem;
+  }
+  .modal-price-line { font-size: .85rem; color: var(--green); font-weight: 500; margin-bottom: 1.1rem; }
+  .modal-section { margin-bottom: 1.1rem; }
+  .modal-section:last-child { margin-bottom: 0; }
+  .modal-section-title {
+    font-size: .78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--green);
+    margin-bottom: .35rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .modal-section-text { font-size: .9rem; color: var(--ink); line-height: 1.55; }
+  .modal-empty { font-size: .85rem; color: var(--muted); font-style: italic; }
+
   /* === Cart bar === */
   .cart-bar {
     position: sticky;
@@ -329,12 +428,12 @@
     align-items: center;
     justify-content: space-between;
   }
-  .admin-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 1rem; }
+  .admin-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 1rem; }
   .admin-prod-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 1rem;
+    padding: .9rem 1rem;
     display: flex;
     align-items: center;
     gap: .75rem;
@@ -342,6 +441,17 @@
   .admin-prod-info { flex: 1; min-width: 0; }
   .admin-prod-name { font-size: .875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .admin-prod-price { font-size: .78rem; color: var(--muted); }
+  .btn-edit-info {
+    font-size: .76rem;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--cream);
+    color: var(--muted);
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-edit-info:hover { border-color: var(--green); color: var(--green); background: var(--green-lt); }
 
   .btn-add {
     padding: .55rem 1rem;
@@ -463,7 +573,7 @@
     .stats-row { grid-template-columns: repeat(3, 1fr); }
     .shop-hero h1 { font-size: 1.4rem; }
     .logo { font-size: 1.1rem; }
-    .admin-products { grid-template-columns: repeat(1, 1fr); } /* Modificato per dispositivi mobili */
+    .admin-products { grid-template-columns: repeat(2, 1fr); }
   }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -489,6 +599,8 @@
       </div>
   </div>
 
+  <div id="product-modal-root"></div>
+
   <div id="admin" class="section" role="tabpanel">
     <div id="admin-content"></div>
   </div>
@@ -513,30 +625,46 @@ const firebaseConfig = {
   measurementId: "G-9L9ZYKEC1F"
 };
 
+// Inizializza Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+/* CAMBIA QUESTA PASSWORD prima di usare il sito! */
 const ADMIN_PASSWORD = 'orto2026';
 
+/* TELEGRAM — inserisci i tuoi dati */
 const TG_TOKEN   = '8817936267:AAHD6L3qpsgz2bN76mWADWJy-G6gUJfNyD8';   
 const TG_CHAT_ID = '-5232331741'; 
 
 /* ========================================================================= */
-/* 1.5 CONFIGURAZIONE ZONE DI CONSEGNA                                       */
-/* ========================================================================= */
-const DELIVERY_ZONES = [
-  { id: 'z1', name: 'Zona 1: Comune e vicinanze (entro 5km)', price: 2.00 },
-  { id: 'z2', name: 'Zona 2: Comuni limitrofi (5-15km)',      price: 5.00 },
-  { id: 'z3', name: 'Zona 3: Fuori zona (oltre 15km)',        price: 10.00 }
-];
-
-/* Nomi utilizzati per la conversione date */
-const monthNames = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-const periodNames = ["", "Inizio", "Metà", "Fine"];
-
-/* ========================================================================= */
 /* 2. STATO APP E DATI DI DEFAULT                                            */
 /* ========================================================================= */
+
+const DEFAULT_PRODUCTS = [
+  {id:1,  name:'Patate viola a pasta gialla',     emoji:'🥔', price:2.80, unit:'kg',    available:true, comingSoon:false},
+  {id:2,  name:'Patate gialle a pasta gialla',    emoji:'🥔', price:2.50, unit:'kg',    available:true, comingSoon:false},
+  {id:3,  name:'Pomodori ciliegini',              emoji:'🍅', price:2.00, unit:'vaschetta', available:true, comingSoon:false},
+  {id:4,  name:'Pomodori da insalata',            emoji:'🍅', price:3.50, unit:'kg',    available:true, comingSoon:false},
+  {id:5,  name:'Pomodori datterini',              emoji:'🍅', price:2.20, unit:'vaschetta', available:true, comingSoon:false},
+  {id:6,  name:'Zucchine Bolognesi chiare',       emoji:'🥒', price:0.80, unit:'pezzo', available:true, comingSoon:false},
+  {id:7,  name:'Zucchine scure',                  emoji:'🥒', price:0.80, unit:'pezzo', available:true, comingSoon:false},
+  {id:8,  name:'Peperoni gialli',                 emoji:'🫑', price:2.20, unit:'500g',  available:true, comingSoon:false},
+  {id:9,  name:'Friggitelli',                     emoji:'🫑', price:1.80, unit:'500g',  available:true, comingSoon:false},
+  {id:10, name:'Cetriolo classico',               emoji:'🥒', price:1.00, unit:'pezzo', available:true, comingSoon:false},
+  {id:11, name:'Cetriolo lungo digeribile',       emoji:'🥒', price:1.30, unit:'pezzo', available:true, comingSoon:false},
+  {id:12, name:'Melanzana lunga',                 emoji:'🍆', price:1.00, unit:'pezzo', available:true, comingSoon:false},
+  {id:13, name:'Melanzana tonda',                 emoji:'🍆', price:1.30, unit:'pezzo', available:true, comingSoon:false},
+  {id:14, name:'Insalata rossa',                  emoji:'🥬', price:1.50, unit:'cespo', available:true, comingSoon:false},
+  {id:15, name:'Insalata verde',                  emoji:'🥬', price:1.50, unit:'cespo', available:true, comingSoon:false},
+  {id:16, name:'Zucca violina',                   emoji:'🎃', price:3.00, unit:'kg',    available:true, comingSoon:false},
+  {id:17, name:'Zucca delica',                    emoji:'🎃', price:2.80, unit:'kg',    available:true, comingSoon:false},
+  {id:18, name:'Aglione',                         emoji:'🧄', price:2.50, unit:'testa', available:true, comingSoon:false},
+  {id:19, name:'Aglio',                           emoji:'🧄', price:0.80, unit:'testa', available:true, comingSoon:false},
+  {id:20, name:'Cipolle bianche',                 emoji:'🧅', price:2.80, unit:'kg',    available:true, comingSoon:false},
+  {id:21, name:'Cipolle dorate',                  emoji:'🧅', price:2.40, unit:'kg',    available:true, comingSoon:false},
+  {id:22, name:'Cocomero',                        emoji:'🍉', price:1.00, unit:'kg',    available:true, comingSoon:false},
+  {id:23, name:'Melone',                          emoji:'🍈', price:1.80, unit:'kg',    available:true, comingSoon:false},
+];
 
 const AUTH_KEY = 'ortolano_auth';
 let cart     = {};
@@ -552,6 +680,7 @@ function setAuth(v){ if(v) sessionStorage.setItem(AUTH_KEY,'1'); else sessionSto
 /* 3. SINCRONIZZAZIONE FIREBASE IN TEMPO REALE                               */
 /* ========================================================================= */
 
+// Sincronizza Ordini
 db.collection("orders").onSnapshot((snapshot) => {
   orders = []; 
   snapshot.forEach((doc) => orders.push(doc.data()));
@@ -562,7 +691,16 @@ db.collection("orders").onSnapshot((snapshot) => {
   }
 });
 
+// Sincronizza Prodotti
 db.collection("products").onSnapshot((snapshot) => {
+  if (snapshot.empty) {
+    // Se il database è vuoto, carica la lista iniziale
+    DEFAULT_PRODUCTS.forEach(p => {
+      db.collection("products").doc(p.id.toString()).set(p);
+    });
+    return;
+  }
+  
   products = [];
   snapshot.forEach((doc) => products.push(doc.data()));
   products.sort((a,b) => a.id - b.id);
@@ -578,6 +716,7 @@ db.collection("products").onSnapshot((snapshot) => {
 function renderShop(){
   const el = document.getElementById('shop-content');
   
+  // Schermata di successo
   if(view==='success'){
     el.innerHTML = `
       <div class="success-screen">
@@ -589,22 +728,12 @@ function renderShop(){
     return;
   }
   
+  // Schermata checkout
   if(view==='checkout'){ renderCheckout(el); return; }
 
+  // Filtra i prodotti
   const avail = products.filter(p => p.available && !p.comingSoon);
-  
-  // Ordinamento automatico per i "Prossimamente"
   const coming = products.filter(p => p.comingSoon);
-  coming.sort((a, b) => {
-    // 99 serve per spingere i prodotti senza data in fondo alla lista
-    const monthA = a.arrMonth || 99; 
-    const monthB = b.arrMonth || 99;
-    if (monthA !== monthB) return monthA - monthB;
-
-    const periodA = a.arrPeriod || 99;
-    const periodB = b.arrPeriod || 99;
-    return periodA - periodB;
-  });
   
   const inCart = products.filter(p => cart[p.id] > 0);
   const total  = inCart.reduce((s,p) => s + cart[p.id] * p.price, 0);
@@ -613,57 +742,41 @@ function renderShop(){
   el.innerHTML = `
     <div class="notice">
       <span class="icon">🌱</span>
-      Disponibilità aggiornata ogni settimana.
+      Disponibilità aggiornata ogni settimana. Ordina entro domenica sera.
     </div>
     
     <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem;">🥦 Disponibili questa settimana</h2>
     <div class="products-grid" role="list" style="margin-bottom: 2.5rem;">
       ${avail.map(p => `
         <div class="product-card" role="listitem">
-          <div class="product-emoji" aria-hidden="true">${p.emoji}</div>
+          <div class="card-top">
+            <div class="product-emoji" aria-hidden="true">${p.img ? `<img src="${p.img}" alt="${p.name}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">` : p.emoji}</div>
+            <button class="info-btn" onclick="openProductInfo(${p.id})" aria-label="Informazioni su ${p.name}">i</button>
+          </div>
           <div class="product-name">${p.name}</div>
           <div class="product-price">€${p.price.toFixed(2)}</div>
           <div class="product-unit">al ${p.unit}</div>
-          
-          ${p.stock === 0 ? 
-            `<div style="margin-top: auto; font-size: 0.8rem; color: var(--red); font-weight: 600; text-align: center; padding: 4px; background: var(--red-lt); border-radius: var(--radius-sm);">🔴 Esaurito</div>` 
-          : 
-            `<div style="margin-top: auto; font-size: 0.75rem; color: var(--green-mid); margin-bottom: 6px; font-weight: 500;">
-               ${p.stock !== undefined ? `Disponibili: ${p.stock}` : 'Disponibilità: illimitata'}
-             </div>
-             <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
-               <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci">−</button>
-               <span class="qty-num" id="qty-${p.id}" aria-live="polite">${cart[p.id]||0}</span>
-               <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta">+</button>
-             </div>`
-          }
+          <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
+            <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci">−</button>
+            <span class="qty-num" id="qty-${p.id}" aria-live="polite">${cart[p.id]||0}</span>
+            <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta">+</button>
+          </div>
         </div>`).join('')}
     </div>
 
     ${coming.length > 0 ? `
       <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1.2rem; color: var(--muted);">🚀 In arrivo prossimamente</h2>
       <div class="products-grid" role="list">
-        ${coming.map(p => {
-          let arrivalText = 'Disponibile a breve';
-          if (p.arrMonth && p.arrPeriod) {
-              arrivalText = `🗓️ Arrivo: ${periodNames[p.arrPeriod]} ${monthNames[p.arrMonth]}`;
-          } else if (p.arrMonth) {
-              arrivalText = `🗓️ Arrivo: ${monthNames[p.arrMonth]}`;
-          }
-          
-          return `
+        ${coming.map(p => `
           <div class="product-card" role="listitem" style="opacity: 0.75; background: #fcfcf9;">
             <div class="product-emoji" aria-hidden="true" style="filter: grayscale(20%);">${p.emoji}</div>
             <div class="product-name" style="color: var(--muted);">${p.name}</div>
-            <div class="product-price" style="color: var(--earth); font-weight: 600;">
-              ${arrivalText}
-            </div>
+            <div class="product-price" style="color: var(--muted);">Disponibile a breve</div>
             <div class="product-unit">al ${p.unit}</div>
             <div style="margin-top: auto; font-size: 0.75rem; color: #856404; background: #fef3cd; padding: 5px; border-radius: var(--radius-sm); text-align: center; font-weight: 500;">
               ⏳ Non ancora ordinabile
             </div>
-          </div>`;
-        }).join('')}
+          </div>`).join('')}
       </div>
     ` : ''}
 
@@ -678,19 +791,52 @@ function renderShop(){
 }
 
 function changeQty(id, d){
-  const p = products.find(prod => prod.id === id);
-  let current = cart[id] || 0;
-  let next = current + d;
-  
-  if(next < 0) next = 0;
-  
-  if(p.stock !== undefined && next > p.stock) {
-    alert('Hai raggiunto la quantità massima disponibile per questo prodotto!');
-    next = p.stock;
-  }
-  
-  cart[id] = next;
+  cart[id] = (cart[id]||0) + d;
+  if(cart[id] < 0) cart[id] = 0;
   renderShop();
+}
+
+function openProductInfo(id){
+  const p = products.find(pr => pr.id === id);
+  if(!p) return;
+  const root = document.getElementById('product-modal-root');
+  const hasDesc = p.description && p.description.trim();
+  const hasUses = p.uses && p.uses.trim();
+  root.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeProductInfo()">
+      <div class="modal-box" role="dialog" aria-modal="true" aria-label="${p.name}">
+        <div class="modal-img-wrap">
+          ${p.img
+            ? `<img src="${p.img}" alt="${p.name}">`
+            : `<span class="modal-emoji-fallback" aria-hidden="true">${p.emoji}</span>`}
+        </div>
+        <button class="modal-close" onclick="closeProductInfo()" aria-label="Chiudi">✕</button>
+        <div class="modal-body">
+          <div class="modal-title">${p.name}</div>
+          <div class="modal-price-line">€${p.price.toFixed(2)} al ${p.unit}</div>
+
+          <div class="modal-section">
+            <div class="modal-section-title">🌱 Descrizione</div>
+            <div class="modal-section-text">${hasDesc ? p.description : '<span class="modal-empty">Nessuna descrizione disponibile per questo prodotto.</span>'}</div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title">🍽️ Idee di utilizzo</div>
+            <div class="modal-section-text">${hasUses ? p.uses : '<span class="modal-empty">Nessun suggerimento disponibile per questo prodotto.</span>'}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.addEventListener('keydown', closeProductInfoOnEsc);
+}
+
+function closeProductInfoOnEsc(e){
+  if(e.key === 'Escape') closeProductInfo();
+}
+
+function closeProductInfo(){
+  document.getElementById('product-modal-root').innerHTML = '';
+  document.removeEventListener('keydown', closeProductInfoOnEsc);
 }
 
 function goCheckout(){
@@ -702,17 +848,8 @@ function goCheckout(){
 function renderCheckout(el){
   const inCart = products.filter(p=>cart[p.id]>0);
   const subtotal = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
-  
   const delivery = window._delivery || 'ritiro';
-  let currentZone = null;
-  let surcharge = 0;
-  
-  if(delivery === 'consegna') {
-    const zoneId = window._deliveryZone || DELIVERY_ZONES[0].id;
-    currentZone = DELIVERY_ZONES.find(z => z.id === zoneId);
-    surcharge = currentZone ? currentZone.price : 0;
-  }
-  
+  const surcharge = delivery === 'consegna' ? 2.00 : 0;
   const total = subtotal + surcharge;
 
   el.innerHTML = `
@@ -726,7 +863,7 @@ function renderCheckout(el){
           </div>`).join('')}
         ${delivery === 'consegna' ? `
           <div class="order-line" style="color:var(--muted)">
-            <span>🚚 ${currentZone.name}</span><span>€${surcharge.toFixed(2)}</span>
+            <span>🚚 Contributo consegna</span><span>€2.00</span>
           </div>` : ''}
         <div class="order-total"><span>Totale</span><span>€${total.toFixed(2)}</span></div>
       </div>
@@ -742,19 +879,10 @@ function renderCheckout(el){
           <button class="delivery-opt ${delivery==='consegna'?'selected':''}" onclick="setDelivery('consegna')">
             <div class="opt-icon">🚚</div>
             <div class="opt-label">Consegna a domicilio</div>
-            <div class="opt-sub">A zone</div>
+            <div class="opt-sub">+ €2.00</div>
           </button>
         </div>
-        
         ${delivery === 'consegna' ? `
-          <div class="form-row full">
-            <div class="form-group">
-              <label>Fascia di consegna *</label>
-              <select id="f-zone" onchange="window._deliveryZone=this.value; renderShop()">
-                ${DELIVERY_ZONES.map(z => `<option value="${z.id}" ${currentZone && currentZone.id === z.id ? 'selected' : ''}>${z.name} (+ €${z.price.toFixed(2)})</option>`).join('')}
-              </select>
-            </div>
-          </div>
           <div class="form-row full">
             <div class="form-group">
               <label>Indirizzo di consegna *</label>
@@ -803,24 +931,14 @@ function submitOrder(){
   }
 
   const delivery = window._delivery || 'ritiro';
-  let deliveryCost = 0;
-  let deliveryZoneName = '';
-  let address = 'Ritiro in loco';
-
-  if(delivery === 'consegna'){
-    const addressInput = document.getElementById('f-address').value.trim();
-    if(!addressInput){ alert('Inserisci l\'indirizzo di consegna.'); return; }
-    address = addressInput;
-    
-    const zoneId = window._deliveryZone || DELIVERY_ZONES[0].id;
-    const currentZone = DELIVERY_ZONES.find(z => z.id === zoneId);
-    deliveryCost = currentZone.price;
-    deliveryZoneName = currentZone.name;
+  if(delivery === 'consegna' && !document.getElementById('f-address').value.trim()){
+    alert('Inserisci l\'indirizzo di consegna.'); return; 
   }
 
   const inCart  = products.filter(p=>cart[p.id]>0);
   const subtotal = inCart.reduce((s,p)=>s+cart[p.id]*p.price, 0);
-  const total   = subtotal + deliveryCost;
+  const total   = subtotal + (delivery === 'consegna' ? 2 : 0);
+  const address = delivery === 'consegna' ? document.getElementById('f-address').value.trim() : 'Ritiro in loco';
   const now     = new Date();
   
   const order   = {
@@ -829,27 +947,18 @@ function submitOrder(){
     time:     now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),
     name:     fname + ' ' + lname,
     email:    email,
-    phone:    phone,
+    phone:    document.getElementById('f-phone').value.trim(),
     note:     document.getElementById('f-note').value.trim(),
     delivery: delivery,
-    deliveryZone: deliveryZoneName,
-    deliveryCost: deliveryCost,
     address:  address,
     items:    inCart.map(p=>({name:p.name, emoji:p.emoji, qty:cart[p.id], price:p.price})),
     total:    total,
     status:  'nuovo',
   };
 
+  // Salva ordine su FIREBASE
   db.collection("orders").doc(order.id).set(order)
     .then(() => {
-      inCart.forEach(p => {
-        if (p.stock !== undefined && p.stock > 0) {
-          db.collection("products").doc(p.id.toString()).update({
-            stock: firebase.firestore.FieldValue.increment(-cart[p.id])
-          });
-        }
-      });
-
       sendTelegramNotification(order);
       cart = {};
       window._delivery = 'ritiro';
@@ -867,11 +976,7 @@ function resetShop(){
 
 async function sendTelegramNotification(order){
   const righe = order.items.map(i=>`  ${i.emoji} ${i.name} ×${i.qty} — €${(i.qty*i.price).toFixed(2)}`).join('\n');
-  
-  const modConsegna = order.delivery === 'consegna' 
-    ? `🚚 Consegna a domicilio\n🗺️ Zona: ${order.deliveryZone} (+€${order.deliveryCost.toFixed(2)})\n📍 ${order.address}` 
-    : `🏡 Ritiro in loco`;
-    
+  const modConsegna = order.delivery === 'consegna' ? `🚚 Consegna\n📍 ${order.address}` : `🏡 Ritiro in loco`;
   const testo = `🌿 Nuovo ordine\n\n👤 ${order.name}\n📞 ${order.phone}\n\n${modConsegna}\n\nProdotti:\n${righe}\n\nTotale: €${order.total.toFixed(2)}`;
   
   try {
@@ -924,45 +1029,15 @@ function renderAdmin(){
                 <div class="admin-prod-info">
                   <div class="admin-prod-name">${p.name}</div>
                   <div class="admin-prod-price">€${p.price.toFixed(2)}/${p.unit}</div>
-                  
-                  <!-- Layout a due colonne (Scorte | Arrivo) -->
-                  <div style="display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 10px; margin-top: 10px; margin-bottom: 4px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                      <label style="font-size: 0.75rem; color:var(--muted); font-weight: 500; line-height: 1;">Scorte max</label>
-                      <input type="number" min="0" placeholder="∞" value="${p.stock !== undefined ? p.stock : ''}" onchange="updateProductStock('${p.id}', this.value)" style="width: 100%; padding: 6px 8px; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none; background: var(--cream);">
-                    </div>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                      <label style="font-size: 0.75rem; color:var(--muted); font-weight: 500; line-height: 1;">Arrivo previsto</label>
-                      <div style="display: flex; gap: 4px;">
-                        <select onchange="updateProductArrival('${p.id}', 'period', this.value)" style="width: 50%; padding: 5px 2px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--cream); outline: none;">
-                          <option value="">Fase</option>
-                          <option value="1" ${p.arrPeriod == 1 ? 'selected' : ''}>Inizio</option>
-                          <option value="2" ${p.arrPeriod == 2 ? 'selected' : ''}>Metà</option>
-                          <option value="3" ${p.arrPeriod == 3 ? 'selected' : ''}>Fine</option>
-                        </select>
-                        <select onchange="updateProductArrival('${p.id}', 'month', this.value)" style="width: 50%; padding: 5px 2px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--cream); outline: none;">
-                          <option value="">Mese</option>
-                          <option value="5" ${p.arrMonth == 5 ? 'selected' : ''}>Mag</option>
-                          <option value="6" ${p.arrMonth == 6 ? 'selected' : ''}>Giu</option>
-                          <option value="7" ${p.arrMonth == 7 ? 'selected' : ''}>Lug</option>
-                          <option value="8" ${p.arrMonth == 8 ? 'selected' : ''}>Ago</option>
-                          <option value="9" ${p.arrMonth == 9 ? 'selected' : ''}>Set</option>
-                          <option value="10" ${p.arrMonth == 10 ? 'selected' : ''}>Ott</option>
-                          <option value="11" ${p.arrMonth == 11 ? 'selected' : ''}>Nov</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               </div>
               
-              <select class="status-sel" style="width: 100%; padding: 6px; margin-top: 4px;" onchange="updateProductStatus('${p.id}', this.value)">
+              <select class="status-sel" style="width: 100%; padding: 4px;" onchange="updateProductStatus('${p.id}', this.value)">
                 <option value="disponibile" ${p.available && !p.comingSoon ? 'selected' : ''}>🟢 Disponibile ora</option>
                 <option value="prossimamente" ${p.comingSoon ? 'selected' : ''}>🚀 Prossimamente</option>
                 <option value="nascosto" ${!p.available && !p.comingSoon ? 'selected' : ''}>⚪ Nascondi</option>
               </select>
+              <button class="btn-edit-info" onclick="openEditInfo('${p.id}')">✏️ Modifica scheda prodotto</button>
             </div>`).join('')}
         </div>
       </div>
@@ -982,11 +1057,7 @@ function renderAdmin(){
                     </span>
                   </div>
                   <div class="order-meta-text">${o.date} ${o.time} · ${o.email}${o.phone?' · '+o.phone:''}</div>
-                  
-                  <div class="order-meta-text" style="color:var(--earth)">
-                    📍 ${o.delivery === 'consegna' ? `${o.address} <br><span style="font-size:0.75rem; opacity:0.8;">(${o.deliveryZone})</span>` : 'Ritiro in loco'}
-                  </div>
-
+                  <div class="order-meta-text" style="color:var(--earth)">📍 ${o.delivery === 'consegna' ? o.address : 'Ritiro in loco'}</div>
                   <div class="order-items-text">${o.items.map(i=>i.emoji+' '+i.name+' ×'+i.qty).join(', ')}</div>
                   ${o.note?`<div class="order-note">📝 ${o.note}</div>`:''}
                 </div>
@@ -1036,17 +1107,54 @@ function updateProductStatus(id, status) {
   db.collection("products").doc(id.toString()).update(updateData);
 }
 
-function updateProductStock(id, stockVal) {
-  const val = stockVal === '' ? firebase.firestore.FieldValue.delete() : parseInt(stockVal, 10);
-  db.collection("products").doc(id.toString()).update({ stock: val });
+function openEditInfo(id){
+  const p = products.find(pr => pr.id.toString() === id.toString());
+  if(!p) return;
+  const root = document.getElementById('product-modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeProductInfo()">
+      <div class="modal-box" role="dialog" aria-modal="true" aria-label="Modifica ${p.name}">
+        <button class="modal-close" onclick="closeProductInfo()" aria-label="Chiudi">✕</button>
+        <div class="modal-body" style="padding-top:1.6rem;">
+          <div class="modal-title" style="margin-bottom:1rem;">✏️ ${p.name}</div>
+
+          <div class="form-row full">
+            <div class="form-group">
+              <label>URL immagine (foto del prodotto)</label>
+              <input id="edit-img" type="text" value="${p.img ? p.img.replace(/"/g,'&quot;') : ''}" placeholder="es. img/pomodori-ciliegini.jpg">
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="form-group">
+              <label>Descrizione / origine</label>
+              <textarea id="edit-desc" placeholder="Es. Coltivati nei nostri campi a due passi da Bologna, raccolti a mano a piena maturazione...">${p.description ? p.description.replace(/</g,'&lt;') : ''}</textarea>
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="form-group">
+              <label>Idee di utilizzo</label>
+              <textarea id="edit-uses" placeholder="Es. Ottimi crudi in insalata, perfetti per bruschette e sughi veloci...">${p.uses ? p.uses.replace(/</g,'&lt;') : ''}</textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-back" onclick="closeProductInfo()">Annulla</button>
+            <button class="btn-primary" onclick="saveProductInfo('${id}')">Salva</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
-function updateProductArrival(id, field, value) {
-  const val = value === '' ? firebase.firestore.FieldValue.delete() : parseInt(value, 10);
-  const updateData = {};
-  if (field === 'period') updateData.arrPeriod = val;
-  if (field === 'month') updateData.arrMonth = val;
-  db.collection("products").doc(id.toString()).update(updateData);
+function saveProductInfo(id){
+  const img  = document.getElementById('edit-img').value.trim();
+  const desc = document.getElementById('edit-desc').value.trim();
+  const uses = document.getElementById('edit-uses').value.trim();
+  db.collection("products").doc(id.toString()).update({
+    img: img,
+    description: desc,
+    uses: uses
+  }).then(() => closeProductInfo())
+    .catch(e => alert("Errore durante il salvataggio: " + e));
 }
 
 function openAddProduct(){
@@ -1057,9 +1165,7 @@ function openAddProduct(){
   const unit = prompt('Unità (es. kg, pezzo):','kg') || 'kg';
   
   const newId = Date.now();
-  db.collection("products").doc(newId.toString()).set({
-    id: newId, name, emoji, price, unit, available: true, comingSoon: false
-  });
+  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false, img: '', description: '', uses: ''});
 }
 
 function updateStatus(id, status){ db.collection("orders").doc(id).update({ status: status }); }
