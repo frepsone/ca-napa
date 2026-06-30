@@ -129,6 +129,8 @@
   .product-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
   .product-emoji { font-size: 2.2rem; margin-bottom: .6rem; line-height: 1; }
   .product-name { font-weight: 500; font-size: .95rem; margin-bottom: 2px; }
+  .product-name-clickable { cursor: pointer; transition: color .12s; }
+  .product-name-clickable:hover { color: var(--green); text-decoration: underline; }
   .product-price { font-size: .85rem; color: var(--green); font-weight: 500; margin-bottom: 2px; }
   .product-unit { font-size: .8rem; color: var(--muted); margin-bottom: .9rem; }
   .qty-ctrl {
@@ -258,6 +260,22 @@
   }
   .modal-section-text { font-size: .9rem; color: var(--ink); line-height: 1.55; }
   .modal-empty { font-size: .85rem; color: var(--muted); font-style: italic; }
+  .recipe-list { display: flex; flex-direction: column; gap: 8px; }
+  .recipe-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .65rem .9rem;
+    background: var(--green-lt);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--green);
+    font-size: .875rem;
+    font-weight: 500;
+    transition: background .12s;
+  }
+  .recipe-link:hover { background: #C2EBD2; }
+  .recipe-arrow { font-size: .9rem; }
 
   /* === Cart bar === */
   .cart-bar {
@@ -753,7 +771,7 @@ function renderShop(){
             <div class="product-emoji" aria-hidden="true">${p.img ? `<img src="${p.img}" alt="${p.name}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">` : p.emoji}</div>
             <button class="info-btn" onclick="openProductInfo(${p.id})" aria-label="Informazioni su ${p.name}">i</button>
           </div>
-          <div class="product-name">${p.name}</div>
+          <div class="product-name product-name-clickable" onclick="openProductInfo(${p.id})">${p.name}</div>
           <div class="product-price">€${p.price.toFixed(2)}</div>
           <div class="product-unit">al ${p.unit}</div>
           <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
@@ -801,7 +819,12 @@ function openProductInfo(id){
   if(!p) return;
   const root = document.getElementById('product-modal-root');
   const hasDesc = p.description && p.description.trim();
-  const hasUses = p.uses && p.uses.trim();
+  const recipes = [
+    {name: p.recipe1Name, url: p.recipe1Url},
+    {name: p.recipe2Name, url: p.recipe2Url},
+    {name: p.recipe3Name, url: p.recipe3Url},
+  ].filter(r => r.name && r.name.trim() && r.url && r.url.trim());
+
   root.innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeProductInfo()">
       <div class="modal-box" role="dialog" aria-modal="true" aria-label="${p.name}">
@@ -822,7 +845,12 @@ function openProductInfo(id){
 
           <div class="modal-section">
             <div class="modal-section-title">🍽️ Idee di utilizzo</div>
-            <div class="modal-section-text">${hasUses ? p.uses : '<span class="modal-empty">Nessun suggerimento disponibile per questo prodotto.</span>'}</div>
+            ${recipes.length > 0
+              ? `<div class="recipe-list">${recipes.map(r => `
+                  <a class="recipe-link" href="${r.url}" target="_blank" rel="noopener noreferrer">
+                    <span>${r.name}</span><span class="recipe-arrow">↗</span>
+                  </a>`).join('')}</div>`
+              : '<div class="modal-section-text"><span class="modal-empty">Nessuna ricetta disponibile per questo prodotto.</span></div>'}
           </div>
         </div>
       </div>
@@ -1132,9 +1160,20 @@ function openEditInfo(id){
           </div>
           <div class="form-row full">
             <div class="form-group">
-              <label>Idee di utilizzo</label>
-              <textarea id="edit-uses" placeholder="Es. Ottimi crudi in insalata, perfetti per bruschette e sughi veloci...">${p.uses ? p.uses.replace(/</g,'&lt;') : ''}</textarea>
+              <label>Ricette consigliate (nome + link al sito esterno)</label>
             </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Ricetta 1 — nome</label><input id="edit-r1name" type="text" value="${p.recipe1Name ? p.recipe1Name.replace(/"/g,'&quot;') : ''}" placeholder="Es. Pasta ai pomodori ciliegini"></div>
+            <div class="form-group"><label>Ricetta 1 — link</label><input id="edit-r1url" type="text" value="${p.recipe1Url ? p.recipe1Url.replace(/"/g,'&quot;') : ''}" placeholder="https://..."></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Ricetta 2 — nome</label><input id="edit-r2name" type="text" value="${p.recipe2Name ? p.recipe2Name.replace(/"/g,'&quot;') : ''}" placeholder="Es. Bruschette estive"></div>
+            <div class="form-group"><label>Ricetta 2 — link</label><input id="edit-r2url" type="text" value="${p.recipe2Url ? p.recipe2Url.replace(/"/g,'&quot;') : ''}" placeholder="https://..."></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Ricetta 3 — nome</label><input id="edit-r3name" type="text" value="${p.recipe3Name ? p.recipe3Name.replace(/"/g,'&quot;') : ''}" placeholder="Es. Sugo veloce"></div>
+            <div class="form-group"><label>Ricetta 3 — link</label><input id="edit-r3url" type="text" value="${p.recipe3Url ? p.recipe3Url.replace(/"/g,'&quot;') : ''}" placeholder="https://..."></div>
           </div>
           <div class="form-actions">
             <button class="btn-back" onclick="closeProductInfo()">Annulla</button>
@@ -1148,11 +1187,18 @@ function openEditInfo(id){
 function saveProductInfo(id){
   const img  = document.getElementById('edit-img').value.trim();
   const desc = document.getElementById('edit-desc').value.trim();
-  const uses = document.getElementById('edit-uses').value.trim();
+  const recipe1Name = document.getElementById('edit-r1name').value.trim();
+  const recipe1Url  = document.getElementById('edit-r1url').value.trim();
+  const recipe2Name = document.getElementById('edit-r2name').value.trim();
+  const recipe2Url  = document.getElementById('edit-r2url').value.trim();
+  const recipe3Name = document.getElementById('edit-r3name').value.trim();
+  const recipe3Url  = document.getElementById('edit-r3url').value.trim();
   db.collection("products").doc(id.toString()).update({
     img: img,
     description: desc,
-    uses: uses
+    recipe1Name, recipe1Url,
+    recipe2Name, recipe2Url,
+    recipe3Name, recipe3Url
   }).then(() => closeProductInfo())
     .catch(e => alert("Errore durante il salvataggio: " + e));
 }
@@ -1165,7 +1211,7 @@ function openAddProduct(){
   const unit = prompt('Unità (es. kg, pezzo):','kg') || 'kg';
   
   const newId = Date.now();
-  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false, img: '', description: '', uses: ''});
+  db.collection("products").doc(newId.toString()).set({id: newId, name, emoji, price, unit, available: true, comingSoon: false, img: '', description: '', recipe1Name: '', recipe1Url: '', recipe2Name: '', recipe2Url: '', recipe3Name: '', recipe3Url: ''});
 }
 
 function updateStatus(id, status){ db.collection("orders").doc(id).update({ status: status }); }
