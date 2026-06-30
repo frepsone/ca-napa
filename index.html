@@ -873,12 +873,21 @@ function renderShop(){
           <div class="product-name product-name-clickable" onclick="openProductInfo(${p.id})">${p.name}</div>
           <div class="product-price">€${p.price.toFixed(2)}</div>
           <div class="product-unit">al ${p.unit}</div>
-          <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
-            <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci">−</button>
-            <span class="qty-num" id="qty-${p.id}" aria-live="polite">${cart[p.id]||0}</span>
-            <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta">+</button>
-          </div>
+          
+          ${p.stock === 0 ? 
+            `<div style="margin-top: auto; font-size: 0.8rem; color: var(--red); font-weight: 600; text-align: center; padding: 4px; background: var(--red-lt); border-radius: var(--radius-sm);">🔴 Esaurito</div>` 
+          : 
+            `<div style="margin-top: auto; font-size: 0.75rem; color: var(--green-mid); margin-bottom: 6px; font-weight: 500;">
+               ${p.stock !== undefined ? `Disponibili: ${p.stock}` : 'Disponibilità: illimitata'}
+             </div>
+             <div class="qty-ctrl" role="group" aria-label="Quantità ${p.name}">
+               <button class="qty-btn" onclick="changeQty(${p.id},-1)" aria-label="Diminuisci">−</button>
+               <span class="qty-num" id="qty-${p.id}" aria-live="polite">${cart[p.id]||0}</span>
+               <button class="qty-btn" onclick="changeQty(${p.id},1)" aria-label="Aumenta">+</button>
+             </div>`
+          }
         </div>`).join('')}
+    </div>
     </div>
 
     ${coming.length > 0 ? `
@@ -908,9 +917,21 @@ function renderShop(){
 }
 
 function changeQty(id, d){
-  cart[id] = (cart[id]||0) + d;
-  if(cart[id] < 0) cart[id] = 0;
+  const p = products.find(prod => prod.id === id);
+  let current = cart[id] || 0;
+  let next = current + d;
+  
+  if(next < 0) next = 0;
+  
+  // Controllo scorte massime
+  if(p.stock !== undefined && next > p.stock) {
+    alert('Hai raggiunto la quantità massima disponibile per questo prodotto!');
+    next = p.stock;
+  }
+  
+  cart[id] = next;
   renderShop();
+}
 }
 
 function openProductInfo(id){
